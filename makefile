@@ -166,6 +166,37 @@ package: tidy
 	
 ###########################################################
 
+# QEMU Development Targets
+# These targets support quick development/testing using QEMU user-mode emulation
+# They do not modify existing build flows or packaging
+# See docs/DEV_QEMU.md for prerequisites and usage
+
+.PHONY: qemu-run qemu-help
+
+qemu-run:
+	# ----------------------------------------------------
+	# Run MinUI under QEMU user-mode emulation
+	# Requires: build/SYSTEM/rg35xx from 'make PLATFORM=rg35xx build'
+	# See: docs/DEV_QEMU.md
+	@./scripts/qemu/run-qemu-user.sh minui
+
+qemu-help:
+	@echo "QEMU Development Targets:"
+	@echo "  qemu-run    - Run MinUI under QEMU user-mode emulation"
+	@echo ""
+	@echo "Prerequisites:"
+	@echo "  1. Install QEMU:"
+	@echo "     macOS: brew install qemu"
+	@echo "     Linux: apt install qemu-user-static"
+	@echo ""
+	@echo "  2. Build for rg35xx:"
+	@echo "     make PLATFORM=rg35xx build"
+	@echo "     make PLATFORM=rg35xx system"
+	@echo ""
+	@echo "For more information, see docs/DEV_QEMU.md"
+
+###########################################################
+
 .DEFAULT:
 	# ----------------------------------------------------
 	# $@
