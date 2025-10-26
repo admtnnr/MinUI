@@ -1,10 +1,125 @@
 # QEMU Development Workflow
 
-This document describes how to use QEMU for quick development and testing of MinUI on a developer workstation without requiring physical hardware.
+This document describes how to use QEMU for development and testing of MinUI on a developer workstation without requiring physical hardware.
 
-## Quick Dev Workflow (User-Mode Emulation)
+## Full System Emulation (Recommended)
 
-The simplest way to test MinUI changes is to use QEMU's user-mode emulation. This runs individual ARM binaries from an existing `rg35xx` build on your development machine.
+The recommended way to test MinUI is using QEMU's full system emulation, which provides framebuffer and input device support. This enables complete testing including UI, controls, and features like cheat support.
+
+### Prerequisites
+
+#### macOS
+```bash
+brew install qemu
+```
+
+#### Linux (Debian/Ubuntu)
+```bash
+sudo apt install qemu-system-arm qemu-utils
+```
+
+#### Linux (Fedora/RHEL)
+```bash
+sudo dnf install qemu-system-arm qemu-img
+```
+
+### Build and Run
+
+1. **Build for rg35xx platform:**
+   ```bash
+   make PLATFORM=rg35xx build
+   make PLATFORM=rg35xx system
+   ```
+
+2. **Build QEMU disk image (first time only):**
+   ```bash
+   make qemu-build-image
+   ```
+   
+   This creates a bootable disk image with MinUI at `build/qemu/minui-rg35xx.img`.
+
+3. **Provide a kernel (first time only):**
+   
+   Download a generic ARM kernel:
+   ```bash
+   mkdir -p build/qemu
+   wget https://github.com/dhruvvyas90/qemu-rpi-kernel/raw/master/kernel-qemu-4.4.34-jessie \
+     -O build/qemu/zImage
+   ```
+   
+   Or use a custom kernel built with framebuffer and input support.
+
+4. **Run MinUI in QEMU:**
+   ```bash
+   make qemu-run
+   ```
+   
+   Or run the script directly:
+   ```bash
+   ./scripts/qemu/run-qemu-system.sh
+   ```
+
+### Keyboard Controls in QEMU
+
+When running in QEMU, keyboard keys are mapped to gamepad controls:
+
+| Keyboard | MinUI Control |
+|----------|---------------|
+| Arrow Keys | D-Pad |
+| Z | A Button |
+| X | B Button |
+| A | X Button |
+| S | Y Button |
+| Q | L Trigger |
+| W | R Trigger |
+| Enter | Start |
+| Space | Select |
+| Esc | Menu |
+
+QEMU window controls:
+- `Ctrl+Alt+G` - Release mouse cursor
+- `Ctrl+Alt+F` - Toggle fullscreen
+- `Ctrl+Alt+Q` - Quit QEMU
+
+### How It Works
+
+The full system emulation:
+- Uses `qemu-system-arm` to emulate a complete ARM virtual machine
+- Boots a Linux kernel with framebuffer and input support
+- Mounts the disk image containing MinUI binaries and libraries
+- Provides virtio-gpu for graphics output
+- Emulates USB keyboard, mouse, and gamepad input
+- Creates device nodes (`/dev/fb0`, `/dev/input/*`) that MinUI can access
+
+This provides the most complete testing environment, supporting all MinUI features including UI rendering, input handling, and hardware-dependent features.
+
+### Advanced Options
+
+**Debug mode:**
+```bash
+./scripts/qemu/run-qemu-system.sh --debug
+```
+
+**GDB debugging:**
+```bash
+# Terminal 1: Start QEMU with GDB server
+./scripts/qemu/run-qemu-system.sh --gdb
+
+# Terminal 2: Connect with GDB
+arm-linux-gnueabihf-gdb build/SYSTEM/rg35xx/bin/minui.elf
+(gdb) target remote :1234
+(gdb) continue
+```
+
+**VNC display (headless):**
+```bash
+./scripts/qemu/run-qemu-system.sh --vnc
+# Connect VNC viewer to localhost:5900
+```
+
+## User-Mode Emulation (Legacy)
+
+For quick testing without graphics, you can use user-mode emulation. This has significant limitations but may be useful for testing non-UI code.
 
 ### Prerequisites
 
@@ -18,22 +133,16 @@ brew install qemu
 sudo apt install qemu-user-static
 ```
 
-#### Linux (Fedora/RHEL)
-```bash
-sudo dnf install qemu-user-static
-```
-
 ### Build and Run
-
 1. **Build for rg35xx platform:**
    ```bash
    make PLATFORM=rg35xx build
    make PLATFORM=rg35xx system
    ```
 
-2. **Run MinUI under QEMU:**
+2. **Run MinUI under QEMU (user-mode):**
    ```bash
-   make qemu-run
+   make qemu-user
    ```
    
    Or run the script directly:
@@ -46,7 +155,7 @@ sudo dnf install qemu-user-static
    ./scripts/qemu/run-qemu-user.sh minarch
    ```
 
-### How It Works
+### How It Works (User-Mode)
 
 The `run-qemu-user.sh` script:
 - Detects `qemu-arm` or `qemu-arm-static` on your system
@@ -56,7 +165,7 @@ The `run-qemu-user.sh` script:
 
 User-mode QEMU translates ARM syscalls to your host OS on-the-fly, allowing ARM binaries to run directly without a full system emulator.
 
-### Limitations
+### Limitations (User-Mode)
 
 **User-mode emulation has several limitations:**
 
@@ -65,22 +174,52 @@ User-mode QEMU translates ARM syscalls to your host OS on-the-fly, allowing ARM 
 - **Limited hardware access:** GPIO, audio, and other hardware peripherals won't function
 - **Testing scope:** Best for testing business logic, file I/O, and crash debugging
 
+**For complete testing with UI and input, use full system emulation instead (see above).**
+
 For these reasons, user-mode emulation is primarily useful for:
 - Quick syntax/compilation checks
 - Testing non-UI code paths
 - Running under debuggers like `gdb`
 - Validating library dependencies load correctly
 
-## Full System Emulation (Future)
+## Comparison: System vs User-Mode
 
-For complete hardware emulation including graphics, input, and peripherals, a full QEMU system emulator is needed. This requires:
+| Feature | Full System | User-Mode |
+|---------|-------------|-----------|
+| Framebuffer/Graphics | ✅ Yes | ❌ No |
+| Input Devices | ✅ Yes | ❌ No |
+| UI Testing | ✅ Full | ❌ None |
+| Cheat Support | ✅ Yes | ❌ No |
+| Boot Time | ~5-10 sec | Instant |
+| Setup Complexity | Medium | Low |
+| Best For | Complete testing | Quick checks |
 
-1. A compatible ARM kernel (Linux kernel for the target SoC)
-2. Device tree blobs (DTB) matching the hardware
-3. A root filesystem image
-4. QEMU machine configuration for the specific SoC
+**Recommendation:** Use full system emulation for development and testing. Use user-mode only for quick non-UI testing.
 
-See `workspace/qemu/PLAN.md` for the roadmap of full system emulation support.
+## Rebuilding After Code Changes
+
+After making changes to MinUI source code:
+
+1. **Rebuild the platform:**
+   ```bash
+   make PLATFORM=rg35xx build
+   make PLATFORM=rg35xx system
+   ```
+
+2. **Rebuild QEMU image:**
+   ```bash
+   make qemu-build-image
+   ```
+
+3. **Run in QEMU:**
+   ```bash
+   make qemu-run
+   ```
+
+Tip: You can combine steps 1-2:
+```bash
+make PLATFORM=rg35xx build system && make qemu-build-image && make qemu-run
+```
 
 ## Troubleshooting
 

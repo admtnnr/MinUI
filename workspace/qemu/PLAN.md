@@ -2,67 +2,77 @@
 
 This document outlines the roadmap for QEMU-based development and testing infrastructure for MinUI.
 
-## Current Status (This PR)
+## Current Status (Implemented)
 
-✅ **Quick Dev Workflow (User-Mode Emulation)**
-
-This PR implements a minimal, safe-first approach:
+✅ **User-Mode Emulation (Quick Dev)**
 - `scripts/qemu/run-qemu-user.sh` - Run ARM binaries via qemu-user
-- `docs/DEV_QEMU.md` - Documentation for the quick dev workflow  
-- `make qemu-run` - Simple make target for developers
-- Reuses existing `build/SYSTEM/rg35xx` tree from normal builds
+- `make qemu-user` - Quick testing without graphics
+- Limitations: No framebuffer, no input devices, no hardware peripherals
+
+✅ **Full System Emulation (Phase 1 - COMPLETE)**
+- `scripts/qemu/build-qemu-image.sh` - Create bootable QEMU disk images
+- `scripts/qemu/run-qemu-system.sh` - Launch full system emulator
+- `make qemu-build-image` - Build disk image with MinUI
+- `make qemu-system` / `make qemu-run` - Run with framebuffer and input support
+- Framebuffer device support (`/dev/fb0`)
+- Input device emulation (keyboard mapped to gamepad)
+- virtio-gpu for graphics
+- USB input devices (keyboard, mouse, gamepad)
+- Complete documentation in `docs/DEV_QEMU.md`
+
+**Key Features:**
 - Works on macOS (M1/ARM64) and Linux hosts
+- Reuses existing `build/SYSTEM/rg35xx` tree from normal builds
 - Non-destructive to existing build targets and toolchains
+- Supports UI testing, cheat support, and full feature testing
+- Keyboard controls mapped to gamepad buttons
 
-**Limitations of user-mode:**
-- No graphics/framebuffer
-- No input devices
-- No hardware peripherals
-- Limited to testing business logic and library dependencies
+## Completed Work
 
-## Future Work
-
-### Phase 1: Full System Emulation Foundation
+### Phase 1: Full System Emulation Foundation ✅
 
 **Goal:** Run MinUI with graphics and input in QEMU system emulator
 
-Tasks:
-- [ ] Research and select appropriate QEMU machine type (e.g., `virt`, `raspi3`, or custom)
-- [ ] Acquire or build a compatible ARM Linux kernel
-  - Option A: Use stock upstream kernel with generic ARM configs
-  - Option B: Use vendor kernel from Anbernic/device SDK
-  - Option C: Build custom minimal kernel for QEMU
-- [ ] Create or obtain device tree blobs (DTB) for the selected machine
-- [ ] Build a bootable disk image with:
-  - Kernel
-  - Initramfs or rootfs
-  - MinUI binaries and assets
-  - Framebuffer device support
-  - Input device emulation (keyboard mapped to gamepad)
+Completed Tasks:
+- [x] Selected QEMU machine type (`virt` with ARM Cortex-A7)
+- [x] Documented kernel options (generic ARM kernel recommended)
+- [x] Created bootable disk image builder
+- [x] Built init script with framebuffer and input device setup
+- [x] Implemented framebuffer device support
+- [x] Implemented input device emulation (keyboard to gamepad mapping)
+- [x] Added virtio-gpu for graphics
+- [x] Added USB input devices
+- [x] Updated makefile with qemu-system targets
+- [x] Comprehensive documentation
 
 **Deliverables:**
-- `scripts/qemu/build-qemu-image.sh` - Create bootable QEMU images
-- `scripts/qemu/run-qemu-system.sh` - Launch full system emulator
-- Updated documentation in `docs/DEV_QEMU.md`
+- ✅ `scripts/qemu/build-qemu-image.sh` - Create bootable QEMU images
+- ✅ `scripts/qemu/run-qemu-system.sh` - Launch full system emulator
+- ✅ Updated documentation in `docs/DEV_QEMU.md`
+- ✅ Makefile targets: `qemu-build-image`, `qemu-system`, `qemu-run`
+
+## Future Work
 
 ### Phase 2: Developer Experience Improvements
 
 **Goal:** Make QEMU workflow seamless for contributors
 
 Tasks:
-- [ ] Add `make qemu-build` target to create QEMU images from scratch
-- [ ] Add `make qemu-install` to install/update MinUI in running QEMU image
+- [ ] Implement hot-reload: automatically rebuild and restart QEMU on code changes
+- [ ] Add `make qemu-install` to update MinUI in running QEMU image without full rebuild
 - [ ] Implement shared folder between host and QEMU (virtio-9p or similar)
   - Auto-sync ROM directories
   - Share build outputs
-- [ ] Create keyboard mapping configuration for MinUI controls
+- [ ] Optimize boot time (skip unnecessary init services, use minimal kernel)
 - [ ] Add snapshot/restore support for quick iteration
-- [ ] Optimize boot time (skip unnecessary init services)
+- [ ] Create automated test runner in QEMU
+- [ ] Prebuilt kernel images for common configurations
 
 **Deliverables:**
-- Enhanced makefile targets
-- Configuration files for input mapping
-- Documentation for rapid development workflow
+- Enhanced makefile targets for rapid development
+- Shared folder configuration
+- Optimized boot configuration
+- Snapshot management scripts
 
 ### Phase 3: Multi-Device Profiles
 
@@ -70,19 +80,22 @@ Tasks:
 
 Tasks:
 - [ ] Create device profiles for different platforms:
-  - rg35xx (current focus)
-  - miyoomini
-  - trimuismart
+  - rg35xx (640x480) - current implementation
+  - miyoomini (640x480)
+  - trimuismart (320x240)
+  - rg35xxplus (640x480)
   - Other popular devices
 - [ ] Device-specific configurations:
   - Screen resolution and orientation
-  - Button layouts
+  - Button layouts and mappings
   - Performance characteristics (CPU speed, memory)
-- [ ] Profile switcher in QEMU scripts
+- [ ] Profile switcher: `make qemu-run PROFILE=miyoomini`
+- [ ] Profile validation and testing
 
 **Deliverables:**
 - `workspace/qemu/profiles/` directory with device configs
-- Updated scripts to select device profile
+- Updated scripts to select device profile at runtime
+- Documentation for each profile
 - Testing matrix for cross-device compatibility
 
 ### Phase 4: CI/CD Integration
