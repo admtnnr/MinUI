@@ -1,9 +1,257 @@
 # MinUI Architecture and Build Overview
 
-This document summarizes how MinUI is organized on disk and how the build
-system assembles firmware images for supported handhelds. It is intended as
-background reading before extending the project with new backends or
-platform targets.
+This document provides a comprehensive overview of MinUI's architecture, covering
+both the runtime system design and the build/packaging infrastructure. It is
+intended as background reading for contributors extending the project with new
+backends, platform targets, or core functionality.
+
+## Table of Contents
+
+1. [Runtime Architecture](#runtime-architecture)
+   - [System Overview](#system-overview)
+   - [Core Components](#core-components)
+   - [Graphics Pipeline](#graphics-pipeline)
+   - [Audio Subsystem](#audio-subsystem)
+   - [Input System](#input-system)
+   - [Power Management](#power-management)
+2. [Repository Layout](#repository-layout)
+3. [Workspace Structure](#workspace-structure)
+4. [Build Pipeline](#build-pipeline)
+5. [Development Workflow](#development-workflow)
+
+---
+
+## Runtime Architecture
+
+### System Overview
+
+MinUI employs a layered architecture optimized for embedded systems with limited
+resources. The design prioritizes simplicity, efficiency, and portability across
+diverse handheld gaming hardware.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         User Interface                       │
+│                    (MinUI Launcher - minui.c)                │
+├─────────────────────────────────────────────────────────────┤
+│                   Libretro Frontend                          │
+│              (Minarch - minarch.c + libretro.h)              │
+├─────────────────────────────────────────────────────────────┤
+│              Platform Abstraction Layer (PAL)                │
+│              (api.h/api.c + platform.h/platform.c)           │
+│  ┌──────────┬──────────┬──────────┬──────────┬──────────┐   │
+│  │ Graphics │  Audio   │  Input   │  Power   │   I/O    │   │
+│  └──────────┴──────────┴──────────┴──────────┴──────────┘   │
+├─────────────────────────────────────────────────────────────┤
+│             Platform-Specific Implementations                │
+│         (workspace/<device>/platform/platform.c)             │
+├─────────────────────────────────────────────────────────────┤
+│                  Hardware / OS Layer                         │
+│            (SDL2, framebuffer, DRM, etc.)                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Core Components
+
+#### 1. MinUI Launcher (`workspace/all/minui/minui.c`)
+
+The main user-facing application responsible for:
+- **ROM browsing**: Scans SD card directories and displays game collections
+- **Launch coordination**: Starts appropriate libretro cores via Minarch
+- **Save state management**: Handles auto-save/resume functionality
+- **Settings UI**: Provides minimal configuration without overwhelming users
+- **Resource management**: Maintains low memory footprint
+
+**Key Design Principles:**
+- Zero-configuration philosophy: sensible defaults, no complex menus
+- Fast startup: optimized initialization and caching
+- Directory-based organization: automatic system detection from folder names
+
+#### 2. Minarch Frontend (`workspace/all/minarch/minarch.c`)
+
+The libretro frontend that bridges MinUI and emulator cores:
+- **Core loading**: Dynamic loading of libretro cores via dlopen()
+- **Emulation loop**: Main run loop coordinating input, video, and audio
+- **In-game menu**: Quick access to save states, settings, and exit
+- **State persistence**: Automatic save state creation and restoration
+- **Threading support**: Optional threaded video rendering for performance
+
+**Threading Model:**
+```c
+// Single-threaded (default):
+//   Input → Core → Video → Audio → Present
+
+// Multi-threaded (optional):
+//   Main Thread: Input → Core → Queue Frame
+//   Render Thread: Dequeue Frame → Scale → Present
+```
+
+**Current Limitation:** SDL2 requires creation and rendering in the same thread,
+which conflicts with some threading optimizations. See Priority 1 recommendations
+for proposed solutions.
+
+#### 3. Platform Abstraction Layer (`workspace/all/common/api.h`)
+
+Provides a unified interface isolating platform differences:
+
+**Graphics API (`GFX_*`)**:
+- `GFX_init()`: Initialize video subsystem
+- `GFX_resize()`: Handle dynamic resolution changes
+- `GFX_flip()`: Present rendered frame
+- `GFX_clear()`: Clear framebuffer
+- `GFX_setVsync()`: Configure vsync mode
+
+**Audio API (`SND_*`)**:
+- `SND_init()`: Initialize audio with sample rate
+- `SND_batchSamples()`: Submit audio frames
+- `SND_quit()`: Cleanup audio resources
+
+**Input API (`PAD_*`)**:
+- `PAD_init()`: Initialize input devices
+- `PAD_poll()`: Sample current input state
+- `PAD_justPressed()`: Detect button press events
+- `PAD_isPressed()`: Check button hold state
+
+**Power API (`PWR_*`)**:
+- `PWR_getBattery()`: Query battery level
+- `PWR_isCharging()`: Check charging status
+- `PWR_setCPUSpeed()`: Set performance mode
+- `PWR_enableAutosleep()`: Manage auto-sleep
+
+**Platform API (`PLAT_*`)**:
+- Device-specific implementations of above functions
+- Handles hardware initialization and teardown
+- Provides scaling, color format conversion, and special features
+
+### Graphics Pipeline
+
+The graphics subsystem is performance-critical and varies significantly by device.
+
+**Current Architecture:**
+```
+Core Output (RGB565/XRGB8888)
+    ↓
+Format Conversion (if needed)
+    ↓
+Scaling (integer, aspect, or fullscreen)
+    ↓
+Sharpness Filter (sharp/crisp/soft)
+    ↓
+Effects (scanlines, grid)
+    ↓
+Present (SDL_Flip or direct framebuffer)
+```
+
+**Rendering Paths:**
+1. **SDL2 Software**: Portable but slower, uses SDL surfaces
+2. **SDL2 Hardware**: GPU-accelerated where available
+3. **Direct Framebuffer**: Linux fbdev for maximum performance
+4. **DRM/KMS**: Modern Linux graphics stack (future)
+
+**Known Issues:**
+- SDL2 performance varies significantly across devices
+- Some platforms require direct framebuffer access for acceptable FPS
+- Custom scalers needed for specific hardware (e.g., RGB30)
+- Thread safety issues with multi-threaded rendering
+
+**Recommended Improvements:** See Priority 1 - Graphics Abstraction Layer
+
+### Audio Subsystem
+
+Audio is handled through SDL's audio callback mechanism:
+
+```c
+// Simplified audio flow:
+void audio_callback(void* userdata, uint8_t* stream, int len) {
+    // Core produces samples
+    core.audio_batch(samples, frame_count);
+
+    // Mix into SDL buffer
+    memcpy(stream, samples, len);
+}
+```
+
+**Current Implementation:**
+- Fixed buffer size with SDL_OpenAudio()
+- Basic resampling for sample rate matching
+- Single audio stream (stereo)
+
+**Known Issues:**
+- Callback bugs causing audio glitches on some platforms
+- No support for dynamic latency adjustment
+- Limited resampling quality
+- Potential buffer underruns on slow devices
+
+**Recommended Improvements:** See Priority 2 - Audio Subsystem Enhancement
+
+### Input System
+
+Input abstraction handles diverse control schemes:
+
+**Input Sources:**
+- Physical buttons (D-pad, face buttons, triggers)
+- Analog sticks (left/right)
+- Special buttons (menu, volume, power)
+
+**Button Mapping:**
+```c
+typedef enum {
+    BTN_ID_A,
+    BTN_ID_B,
+    BTN_ID_X,
+    BTN_ID_Y,
+    BTN_ID_START,
+    BTN_ID_SELECT,
+    BTN_ID_MENU,
+    BTN_ID_L1, BTN_ID_L2, BTN_ID_L3,
+    BTN_ID_R1, BTN_ID_R2, BTN_ID_R3,
+    BTN_ID_UP, BTN_ID_DOWN, BTN_ID_LEFT, BTN_ID_RIGHT,
+    BTN_ID_COUNT
+} ButtonID;
+```
+
+**Input Processing:**
+1. Platform polls hardware state (`PLAT_pollInput()`)
+2. Raw state mapped to logical buttons
+3. Repeat/hold detection applied
+4. Event flags set (just_pressed, is_pressed, just_released)
+
+**Current Limitations:**
+- Some devices have hardwired joysticks that can't be remapped
+- Limited support for hotplugging controllers
+- No on-screen configuration UI
+
+**Recommended Improvements:** See Priority 2 - Input Abstraction Enhancement
+
+### Power Management
+
+Power management is crucial for battery-powered handhelds:
+
+**Features:**
+- Battery level monitoring
+- Charging state detection
+- CPU frequency scaling (menu/powersave/normal/performance)
+- Auto-sleep after inactivity
+- Low battery warnings
+- Graceful shutdown
+
+**CPU Speed Modes:**
+- `CPU_SPEED_MENU`: Minimal speed for UI navigation
+- `CPU_SPEED_POWERSAVE`: Balanced efficiency
+- `CPU_SPEED_NORMAL`: Standard emulation
+- `CPU_SPEED_PERFORMANCE`: Maximum speed for demanding cores
+
+**Implementation:**
+```c
+void PWR_update(int* dirty, int* show_setting,
+                PWR_callback_t before_sleep,
+                PWR_callback_t after_sleep);
+```
+
+Handles brightness/volume adjustments via hardware buttons, triggers sleep/wake
+events, and updates battery indicator.
+
+---
 
 ## Repository Layout
 
