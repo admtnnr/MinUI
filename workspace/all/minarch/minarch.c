@@ -4733,6 +4733,8 @@ int main(int argc , char* argv[]) {
 			screen_scaling = SCALE_FULLSCREEN;
 		} else if (minui_config->display_scale == DISPLAY_SCALE_INTEGER) {
 			screen_scaling = SCALE_CROPPED; // Map integer to cropped
+		} else if (minui_config->display_scale == DISPLAY_SCALE_NATIVE) {
+			screen_scaling = SCALE_NATIVE;
 		}
 
 		// Apply performance settings
