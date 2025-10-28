@@ -341,10 +341,14 @@ const gfx_backend_t gfx_backend_sdl2_hw = {
     .set_rotation = NULL,
 };
 
+// Framebuffer backend - implemented in gfx_backend_fbdev.c
+extern const gfx_backend_t gfx_backend_fbdev_impl;
+
+// Alias for consistency
 const gfx_backend_t gfx_backend_fbdev = {
     .name = "fbdev",
     .capabilities = GFX_CAP_TRIPLE_BUFFER,
-    .init = NULL,  // TODO: Implement framebuffer backend
+    .init = NULL,  // Implemented in gfx_backend_fbdev.c
     .quit = NULL,
     .present = NULL,
     .set_scaling = NULL,
@@ -354,6 +358,10 @@ const gfx_backend_t gfx_backend_fbdev = {
     .get_framebuffer = NULL,
     .set_rotation = NULL,
 };
+
+// Note: To use fbdev backend, platforms should register gfx_backend_fbdev_impl
+// instead of gfx_backend_fbdev. The implementation is in gfx_backend_fbdev.c
+// which can be compiled conditionally for Linux platforms.
 
 const gfx_backend_t gfx_backend_drm = {
     .name = "drm",

@@ -1,0 +1,256 @@
+# MinUI Configuration File
+#
+# This is an example configuration file showing all available options.
+# Copy this file to /mnt/sdcard/.userdata/minui.conf to customize MinUI behavior.
+#
+# All settings are optional - MinUI works perfectly without this file!
+# Any setting left unspecified will use sensible defaults.
+#
+# Lines starting with # are comments and are ignored.
+# Format: key=value (no spaces around =)
+
+# ==============================================================================
+# GRAPHICS SETTINGS
+# ==============================================================================
+
+# Graphics backend to use
+# Options: auto, sdl2, sdl2_hw, fbdev, drm
+# Default: auto (automatically selects best available backend)
+#
+# - auto: Let MinUI choose the best backend for your device
+# - sdl2: Use SDL2 software rendering (compatible, slower)
+# - sdl2_hw: Use SDL2 hardware acceleration (if available)
+# - fbdev: Use direct Linux framebuffer (fast, Linux only)
+# - drm: Use DRM/KMS (modern devices, not yet implemented)
+#
+graphics_backend=auto
+
+# Display scaling mode
+# Options: aspect, fullscreen, integer, native
+# Default: aspect
+#
+# - aspect: Maintain aspect ratio, add black bars if needed (recommended)
+# - fullscreen: Stretch to fill entire screen (may distort image)
+# - integer: Use integer scaling only (sharp pixels, may be small)
+# - native: No scaling, center image (1:1 pixels)
+#
+display_scale=aspect
+
+# Display sharpness filter
+# Options: sharp, crisp, soft
+# Default: soft
+#
+# - sharp: No filtering, maximum sharpness (may look pixelated)
+# - crisp: Slight filtering for clarity
+# - soft: Bilinear filtering for smooth appearance
+#
+display_sharpness=soft
+
+# VSync mode
+# Options: 0 (off), 1 (lenient), 2 (strict)
+# Default: 1
+#
+# - 0 (off): No frame pacing, run as fast as possible
+# - 1 (lenient): Target 60 FPS, allow occasional drops (recommended)
+# - 2 (strict): Hard vsync, wait for vblank every frame
+#
+display_vsync=1
+
+# ==============================================================================
+# AUDIO SETTINGS
+# ==============================================================================
+
+# Audio latency in milliseconds
+# Range: 32-256
+# Default: 64
+#
+# Lower values reduce lag but may cause audio stuttering.
+# Higher values increase lag but improve stability.
+# Adjust based on your device's performance.
+#
+audio_latency=64
+
+# Audio sample rate in Hz
+# Options: 0 (auto), 22050, 32000, 44100, 48000
+# Default: 0
+#
+# Set to 0 to let MinUI choose automatically.
+# Only change if you experience audio issues.
+#
+audio_sample_rate=0
+
+# ==============================================================================
+# EMULATION SETTINGS
+# ==============================================================================
+
+# Number of save state slots
+# Range: 1-10
+# Default: 4
+#
+# More slots use more storage space but provide more save points.
+#
+savestate_slots=4
+
+# Frame skip mode
+# Options: 0 (off), 1 (auto), 2-4 (skip 1-3 frames)
+# Default: 0
+#
+# - 0 (off): No frame skipping, maximum quality
+# - 1 (auto): Skip frames automatically if too slow
+# - 2-4: Skip 1-3 frames manually for speed boost
+#
+# Only use if games run too slowly on your device.
+#
+frame_skip=0
+
+# Enable rewind feature
+# Options: 0 (off), 1 (on)
+# Default: 0
+#
+# Rewind allows you to go back in time during gameplay.
+# Uses significant memory and CPU, may impact performance.
+#
+rewind_enabled=0
+
+# Fast forward speed multiplier
+# Options: 0 (unlimited), 2-10 (2x-10x speed)
+# Default: 3
+#
+# Speed multiplier when fast-forward is activated.
+# 0 = run as fast as possible
+# 3 = run at 3x normal speed (recommended)
+#
+fast_forward_speed=3
+
+# ==============================================================================
+# PERFORMANCE SETTINGS
+# ==============================================================================
+
+# Enable threaded video rendering
+# Options: 0 (off), 1 (on)
+# Default: 0
+#
+# Separates video rendering into a dedicated thread for better performance.
+# Only enable if your device supports it and you experience performance issues.
+# Not all platforms support this feature.
+#
+thread_video=0
+
+# CPU speed overrides (in MHz)
+# Set to 0 to use platform defaults
+# Default: 0 (use platform defaults)
+#
+# These allow you to override CPU frequency for different modes.
+# Only change if you know your device's supported frequencies!
+# Incorrect values may cause instability.
+#
+# Menu mode (minimal CPU usage for UI)
+cpu_speed_menu=0
+
+# Power save mode (balanced efficiency)
+cpu_speed_powersave=0
+
+# Normal mode (standard emulation)
+cpu_speed_normal=0
+
+# Performance mode (maximum speed for demanding cores)
+cpu_speed_performance=0
+
+# ==============================================================================
+# PATHS
+# ==============================================================================
+
+# Custom ROM path
+# Default: /mnt/sdcard/Roms
+#
+# Change this to use a different directory for your ROM files.
+# The directory must exist before launching MinUI.
+#
+rom_path=/mnt/sdcard/Roms
+
+# Custom BIOS path
+# Default: /mnt/sdcard/Bios
+#
+# Directory containing BIOS files needed by some cores (PSX, etc.)
+#
+bios_path=/mnt/sdcard/Bios
+
+# Custom saves path
+# Default: /mnt/sdcard/Saves
+#
+# Directory where save files and save states are stored.
+#
+saves_path=/mnt/sdcard/Saves
+
+# ==============================================================================
+# UI SETTINGS
+# ==============================================================================
+
+# Show FPS counter
+# Options: 0 (off), 1 (on)
+# Default: 0
+#
+# Display frames per second in the top-left corner during gameplay.
+# Useful for performance testing.
+#
+show_fps=0
+
+# Show battery indicator
+# Options: 0 (off), 1 (on)
+# Default: 1
+#
+# Display battery level and charging status.
+#
+show_battery=1
+
+# Menu auto-hide timeout (in seconds)
+# Range: 0-300
+# Default: 0 (never hide)
+#
+# Automatically hide in-game menu after this many seconds of inactivity.
+# Set to 0 to disable auto-hide.
+#
+menu_timeout=0
+
+# ==============================================================================
+# DEBUGGING
+# ==============================================================================
+
+# Enable debug mode
+# Options: 0 (off), 1 (on)
+# Default: 0
+#
+# Enables additional logging and debug features.
+# Only enable for troubleshooting.
+#
+debug=0
+
+# Log level
+# Options: 0 (errors only), 1 (warnings), 2 (info), 3 (debug)
+# Default: 1
+#
+# Controls verbosity of log output.
+# - 0: Only critical errors
+# - 1: Errors and warnings (recommended)
+# - 2: Errors, warnings, and informational messages
+# - 3: Everything including debug details (very verbose)
+#
+log_level=1
+
+# ==============================================================================
+# NOTES
+# ==============================================================================
+#
+# After editing this file:
+# 1. Save the file as /mnt/sdcard/.userdata/minui.conf
+# 2. Restart MinUI for changes to take effect
+#
+# To reset to defaults:
+# - Delete or rename this file
+# - MinUI will use built-in defaults
+#
+# For more information:
+# - See docs/CONFIGURATION.md in the MinUI repository
+# - Visit https://github.com/shauninman/MinUI
+#
+# ==============================================================================
