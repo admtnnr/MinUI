@@ -139,6 +139,67 @@ with clear priorities and dependencies.
 - UI: FPS counter, battery indicator, menu timeout
 - Debug: logging levels
 
+### 2.4 Platform Integration (IN PROGRESS)
+
+**Status:** 🔄 In Progress
+**Platform:** RG35XX (completed), others pending
+
+**Completed:**
+- ✅ RG35XX feature flag system implementation
+- ✅ Conditional compilation for Phase 2 components
+- ✅ RG35XX-specific configuration example
+- ✅ Comprehensive integration documentation
+- ✅ Build system modifications for opt-in features
+
+**Feature Flags Implemented:**
+- `USE_CONFIG_SYSTEM` (default: enabled) - Configuration file support
+- `USE_GFX_BACKEND` (default: disabled) - Graphics backend abstraction
+- `USE_FBDEV_BACKEND` (default: disabled) - Framebuffer backend
+- `USE_FRAME_QUEUE` (default: disabled) - Threaded video rendering
+- `DEBUG_PHASE2` (default: disabled) - Verbose logging
+
+**Files Created:**
+- `workspace/rg35xx/platform/phase2_flags.mk` - Feature flag definitions
+- `workspace/rg35xx/PHASE2_INTEGRATION.md` - Integration guide (600+ lines)
+- `workspace/rg35xx/minui.conf.example` - Platform-specific config with optimization profiles
+- Modified: `workspace/rg35xx/platform/makefile.env`, `platform.c`
+- Modified: `workspace/all/minui/makefile`, `workspace/all/minarch/makefile`
+
+**Benefits:**
+- Controlled testing of Phase 2 features
+- Zero risk to existing functionality (backward compatible)
+- Granular feature enablement for testing
+- Easy performance comparison (stock vs. enhanced)
+- Platform-specific optimization profiles
+
+**Build Examples:**
+```bash
+# Configuration only (recommended first test)
+make PLATFORM=rg35xx USE_CONFIG_SYSTEM=1
+
+# All features enabled (experimental)
+make PLATFORM=rg35xx USE_CONFIG_SYSTEM=1 USE_FRAME_QUEUE=1 DEBUG_PHASE2=1
+
+# Stock build (no changes)
+make PLATFORM=rg35xx
+```
+
+**RG35XX-Specific Notes:**
+- Hardware acceleration (ION + Display Engine) preserved by default
+- Configuration system enabled by default (USE_CONFIG_SYSTEM=1)
+- Graphics backend kept at "auto" to maintain hardware path
+- Frame queue available for testing (dual-core Cortex-A9)
+- Optimization profiles for battery/balanced/performance tuning
+
+**Remaining Platforms:**
+- [ ] Miyoo Mini integration
+- [ ] TrimUI integration
+- [ ] RGB30 integration
+- [ ] Other supported platforms
+
+**Branch:** `claude/rg35xx-phase2-integration-011CUXxjQqMKtRrphKw937Rj`
+**Commit:** 90677e6
+
 ---
 
 ## Phase 3: Priority 2 Enhancements (NOT STARTED)
@@ -323,14 +384,15 @@ For each platform to adopt new systems:
 
 ## Current Status Summary
 
-**Completed:** 14 tasks (70%)
-**In Progress:** 0 tasks (0%)
-**Not Started:** 6 tasks (30%)
+**Completed:** 15 tasks (75%)
+**In Progress:** 1 task (RG35XX integration complete, other platforms pending)
+**Not Started:** 6 tasks (25%)
 
-**Overall Progress:** Phase 1 complete, Phase 2 complete, Phase 3 ready to start
+**Overall Progress:** Phase 1 complete, Phase 2 complete + RG35XX integrated, Phase 3 ready to start
 
-### Recently Completed (Phase 2)
+### Recently Completed
 
+**Phase 2 Core Components:**
 - ✅ Graphics backend abstraction layer (full)
 - ✅ SDL2 backend implementation
 - ✅ Framebuffer (fbdev) backend implementation
@@ -341,12 +403,20 @@ For each platform to adopt new systems:
 - ✅ User documentation (CONFIGURATION.md)
 - ✅ Integration guide (INTEGRATION.md)
 
+**Platform Integration:**
+- ✅ RG35XX Phase 2 integration with feature flags (2025-10-27)
+  - Feature flag build system
+  - Conditional compilation framework
+  - Platform-specific config example
+  - Comprehensive integration documentation
+  - Build tested with multiple flag combinations
+
 ### Next Milestones
 
-1. **Immediate:** Platform adoption of Phase 2 systems
-2. **Short-term:** Begin Phase 3 (audio subsystem enhancement)
-3. **Medium-term:** Dynamic core loading
-4. **Long-term:** Testing framework and modular build system
+1. **Immediate:** Test RG35XX integration on hardware, integrate other platforms
+2. **Short-term:** Complete platform adoption of Phase 2 systems
+3. **Medium-term:** Begin Phase 3 (audio subsystem enhancement)
+4. **Long-term:** Dynamic core loading, testing framework
 
 ---
 
@@ -392,6 +462,8 @@ For questions about this refactoring effort:
 4. Open GitHub discussion for architectural questions
 5. Submit issues for bugs or unclear documentation
 
-**Status Last Updated:** 2025-10-27 (Phase 2 Completion)
-**Current Branch:** `claude/phase2-completion-011CUXxjQqMKtRrphKw937Rj`
-**Merged Branches:** `claude/minui-architecture-review-011CUXxjQqMKtRrphKw937Rj` (Phase 1)
+**Status Last Updated:** 2025-10-28 (RG35XX Integration)
+**Current Branch:** `claude/rg35xx-phase2-integration-011CUXxjQqMKtRrphKw937Rj`
+**Merged Branches:**
+- `claude/minui-architecture-review-011CUXxjQqMKtRrphKw937Rj` (Phase 1)
+- `claude/phase2-completion-011CUXxjQqMKtRrphKw937Rj` (Phase 2)
