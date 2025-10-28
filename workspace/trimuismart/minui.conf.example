@@ -97,7 +97,7 @@
 # - fbdev: software framebuffer (fallback, requires USE_FBDEV_BACKEND=1)
 # - sdl2: SDL2 software rendering (not recommended for this platform)
 # Default: auto (hardware acceleration)
-#gfx_backend=auto
+#graphics_backend=auto
 
 # Display scaling mode
 # Options: aspect, fullscreen, integer, native
@@ -106,14 +106,14 @@
 # - integer: use integer scaling (crisp pixels, may have borders)
 # - native: no scaling (for 320x240 native resolution games)
 # Default: aspect
-#gfx_scale_mode=aspect
+#display_scale=aspect
 
 # Screen sharpness
 # Range: 0-10 (0=softest, 10=sharpest)
 # Higher values emphasize pixels, lower values smooth them
 # On 320x240 display, sharpness is very noticeable
 # Default: 5
-#gfx_sharpness=5
+#display_sharpness=soft
 
 # Vsync (vertical synchronization)
 # 0=off (may tear), 1=on (smooth rendering)
@@ -147,7 +147,7 @@
 # Range: 1-10
 # Number of save state slots per game
 # Default: 4
-#save_slots=4
+#savestate_slots=4
 
 # Frame skip
 # 0=no skip (best quality), 1=skip 1 frame, 2=skip 2 frames, etc.
@@ -159,7 +159,7 @@
 # 0=disabled, 1=enabled
 # Allows rewinding gameplay (uses significant RAM - careful on 128MB)
 # Default: 0
-#enable_rewind=0
+#rewind_enabled=0
 
 # Rewind buffer seconds
 # Range: 5-60 seconds
@@ -206,27 +206,20 @@
 # ROM directory
 # Absolute path to ROM files
 # Default: /mnt/SDCARD/Roms
-#path_roms=/mnt/SDCARD/Roms
+#rom_path=/mnt/SDCARD/Roms
 
 # BIOS directory
 # Absolute path to BIOS files
 # Default: /mnt/SDCARD/.userdata/bios
-#path_bios=/mnt/SDCARD/.userdata/bios
+#bios_path=/mnt/SDCARD/.userdata/bios
 
 # Save file directory
 # Absolute path to save files (.sav, .srm)
 # Default: /mnt/SDCARD/.userdata/saves
-#path_saves=/mnt/SDCARD/.userdata/saves
+#saves_path=/mnt/SDCARD/.userdata/saves
 
-# Save state directory
-# Absolute path to save states
-# Default: /mnt/SDCARD/.userdata/states
-#path_states=/mnt/SDCARD/.userdata/states
-
-# Screenshot directory
 # Absolute path to screenshots
 # Default: /mnt/SDCARD/.userdata/screenshots
-#path_screenshots=/mnt/SDCARD/.userdata/screenshots
 
 # ============================================================================
 # USER INTERFACE SETTINGS
@@ -273,14 +266,14 @@
 # - TrimUI Smart uses Allwinner Display Engine (DE) + ION memory allocation
 # - Hardware-accelerated scaling and format conversion
 # - Significantly faster than software rendering
-# - Keep gfx_backend=auto to use hardware acceleration
+# - Keep graphics_backend=auto to use hardware acceleration
 # - The graphics backend abstraction is optional (USE_GFX_BACKEND=0 by default)
 #
 # Display Characteristics:
 # - Small 320x240 IPS screen (portrait, rotated to landscape)
 # - Pixel-perfect scaling for NES (256x240), Game Gear (160x144)
 # - Some cores will have borders due to aspect ratio
-# - Sharp pixels at native resolution - test gfx_sharpness settings
+# - Sharp pixels at native resolution - test display_sharpness settings
 #
 # Memory Limitations (128MB RAM):
 # - More comfortable than 64MB devices but still limited

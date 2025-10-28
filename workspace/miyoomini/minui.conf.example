@@ -97,7 +97,7 @@
 # - fbdev: software framebuffer (fallback, requires USE_FBDEV_BACKEND=1)
 # - sdl2: SDL2 software rendering (not recommended for this platform)
 # Default: auto (hardware acceleration)
-#gfx_backend=auto
+#graphics_backend=auto
 
 # Display scaling mode
 # Options: aspect, fullscreen, integer, native
@@ -106,13 +106,13 @@
 # - integer: use integer scaling (crisp pixels, may have borders)
 # - native: no scaling (for games matching display resolution)
 # Default: aspect
-#gfx_scale_mode=aspect
+#display_scale=aspect
 
 # Screen sharpness
 # Range: 0-10 (0=softest, 10=sharpest)
 # Higher values emphasize pixels, lower values smooth them
 # Default: 5
-#gfx_sharpness=5
+#display_sharpness=soft
 
 # Vsync (vertical synchronization)
 # 0=off (may tear), 1=on (smooth rendering)
@@ -146,7 +146,7 @@
 # Range: 1-10
 # Number of save state slots per game
 # Default: 4
-#save_slots=4
+#savestate_slots=4
 
 # Frame skip
 # 0=no skip (best quality), 1=skip 1 frame, 2=skip 2 frames, etc.
@@ -158,7 +158,7 @@
 # 0=disabled, 1=enabled
 # Allows rewinding gameplay (uses significant RAM - careful on 64MB Mini)
 # Default: 0
-#enable_rewind=0
+#rewind_enabled=0
 
 # Rewind buffer seconds
 # Range: 5-60 seconds
@@ -204,27 +204,20 @@
 # ROM directory
 # Absolute path to ROM files
 # Default: /mnt/SDCARD/Roms
-#path_roms=/mnt/SDCARD/Roms
+#rom_path=/mnt/SDCARD/Roms
 
 # BIOS directory
 # Absolute path to BIOS files
 # Default: /mnt/SDCARD/.userdata/bios
-#path_bios=/mnt/SDCARD/.userdata/bios
+#bios_path=/mnt/SDCARD/.userdata/bios
 
 # Save file directory
 # Absolute path to save files (.sav, .srm)
 # Default: /mnt/SDCARD/.userdata/saves
-#path_saves=/mnt/SDCARD/.userdata/saves
+#saves_path=/mnt/SDCARD/.userdata/saves
 
-# Save state directory
-# Absolute path to save states
-# Default: /mnt/SDCARD/.userdata/states
-#path_states=/mnt/SDCARD/.userdata/states
-
-# Screenshot directory
 # Absolute path to screenshots
 # Default: /mnt/SDCARD/.userdata/screenshots
-#path_screenshots=/mnt/SDCARD/.userdata/screenshots
 
 # ============================================================================
 # USER INTERFACE SETTINGS
@@ -270,13 +263,13 @@
 # Hardware Acceleration:
 # - Miyoo Mini uses MStar MI_GFX for hardware-accelerated blitting
 # - This is significantly faster than software rendering
-# - Keep gfx_backend=auto to use hardware acceleration
+# - Keep graphics_backend=auto to use hardware acceleration
 # - The graphics backend abstraction is optional (USE_GFX_BACKEND=0 by default)
 #
 # Memory Limitations (Mini 64MB):
 # - Be conservative with rewind (uses significant RAM)
 # - Use frame skip for demanding cores (PSX, N64 ports if available)
-# - Lower save_slots if running into memory issues
+# - Lower savestate_slots if running into memory issues
 #
 # Memory Headroom (Plus 128MB):
 # - More comfortable with rewind enabled
@@ -286,7 +279,7 @@
 # 560p Mode (Plus only):
 # - If you have enabled 560p mode, scaling may differ
 # - Consider using integer scaling for crisp pixels
-# - Test gfx_scale_mode settings for your preference
+# - Test display_scale settings for your preference
 #
 # Audio Latency:
 # - If you hear crackling, increase audio_latency to 96 or 128
