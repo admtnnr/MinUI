@@ -80,6 +80,7 @@
  */
 
 #include <stdint.h>
+#include <stddef.h>
 
 // Maximum path length
 #ifndef MAX_PATH
