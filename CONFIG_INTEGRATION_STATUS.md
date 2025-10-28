@@ -60,9 +60,9 @@ This document tracks which configuration options are fully integrated, partially
 
 | Option | Status | Location | Notes |
 |--------|--------|----------|-------|
-| `rom_path` | ❌ NOT INTEGRATED | - | File browser needs to use custom path |
-| `bios_path` | ❌ NOT INTEGRATED | - | Core loading needs to check custom BIOS path |
-| `saves_path` | ❌ NOT INTEGRATED | - | Save system needs to use custom path |
+| `rom_path` | ✅ INTEGRATED | minui.c:20-45 | getRomsPath() helper returns custom or default path (used in 10 locations) |
+| `bios_path` | ✅ INTEGRATED | minarch.c:2949-2953 | Overrides core.bios_dir with custom path/{tag} |
+| `saves_path` | ✅ INTEGRATED | minarch.c:2954-2958 | Overrides core.saves_dir with custom path/{tag} |
 
 ### Debug Settings
 
@@ -87,9 +87,12 @@ These configuration options are fully applied and functional:
 8. **show_battery** - Show/hide battery indicator (0=hide, 1=show)
 9. **log_level** - Control logging verbosity (0=error, 1=warn, 2=info, 3=debug)
 10. **menu_timeout** - Auto-close menu after N seconds of inactivity (0=never timeout)
+11. **rom_path** - Custom ROM directory path (file browser looks here)
+12. **bios_path** - Custom BIOS directory path (cores look here for BIOS files)
+13. **saves_path** - Custom save files directory path (SRAM/RTC saves stored here)
 
-**New in this update**: menu_timeout
-**Previous update**: savestate_slots, show_battery, log_level
+**New in this update**: rom_path, bios_path, saves_path
+**Previous update**: menu_timeout
 
 ---
 
@@ -240,7 +243,7 @@ Options marked as ❌ or 🔧 cannot be tested until integration code is added.
 ### Phase 3: Complex (Platform-Specific)
 - [ ] audio_latency (requires refactoring)
 - [ ] CPU speed overrides (per-platform)
-- [ ] Path settings (file system integration)
+- [x] Path settings (rom_path, bios_path, saves_path)
 
 ### Phase 4: Feature Flags
 - [ ] graphics_backend (requires USE_GFX_BACKEND=1)
@@ -251,15 +254,15 @@ Options marked as ❌ or 🔧 cannot be tested until integration code is added.
 ## Summary
 
 **Total Config Options**: 23
-- ✅ **Integrated and Working**: 10 (43%)
+- ✅ **Integrated and Working**: 13 (57%)
 - ⚠️ **Partial/Debug Only**: 1 (4%)
 - 🔧 **Needs Platform Work**: 5 (22%)
-- ❌ **Not Yet Integrated**: 5 (22%)
+- ❌ **Not Yet Integrated**: 2 (9%)
 - ❌ **Not Implemented**: 2 (9%)
 
-**Current Focus**: 10 core display, performance, and UI options are working. The remaining options require more extensive integration work across multiple subsystems.
+**Current Focus**: 13 options now integrated, covering display, performance, UI, and path settings. The remaining options are either platform-specific (CPU/audio), input-related (buttons/analog), or not implemented in the codebase.
 
-**Recommendation**: Continue integrating remaining options based on priority: path settings (rom_path, bios_path, saves_path), button_swap, and analog_sensitivity are next logical candidates.
+**Recommendation**: Next candidates: button_swap and analog_sensitivity (input system integration), or debug flag (make globally accessible).
 
 ---
 

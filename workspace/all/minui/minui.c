@@ -12,6 +12,39 @@
 #include "utils.h"
 
 ///////////////////////////////////////
+// Configuration helpers
+///////////////////////////////////////
+
+#ifdef USE_CONFIG_SYSTEM
+// Helper to get the configured ROM path, or default if not set
+static const char* getRomsPath(void) {
+	static char custom_roms_path[256] = {0};
+	static int initialized = 0;
+
+	if (!initialized) {
+		initialized = 1;
+		minui_config_t* config = CONFIG_get();
+		if (config && config->rom_path && config->rom_path[0] != '\0') {
+			strncpy(custom_roms_path, config->rom_path, sizeof(custom_roms_path) - 1);
+			custom_roms_path[sizeof(custom_roms_path) - 1] = '\0';
+			LOG_info("Using custom ROM path: %s\n", custom_roms_path);
+			return custom_roms_path;
+		}
+	}
+
+	if (custom_roms_path[0] != '\0') {
+		return custom_roms_path;
+	}
+
+	return ROMS_PATH;
+}
+#else
+static const char* getRomsPath(void) {
+	return ROMS_PATH;
+}
+#endif
+
+//////////////////////////////////////
 
 typedef struct Array {
 	int count;
@@ -622,7 +655,7 @@ static int hasRoms(char* dir_name) {
 	if (!hasEmu(emu_name)) return has;
 	
 	// check for at least one non-hidden file (we're going to assume it's a rom)
-	sprintf(rom_path, "%s/%s/", ROMS_PATH, dir_name);
+	sprintf(rom_path, "%s/%s/", getRomsPath(), dir_name);
 	DIR *dh = opendir(rom_path);
 	if (dh!=NULL) {
 		struct dirent *dp;
@@ -642,12 +675,12 @@ static Array* getRoot(void) {
 	if (hasRecents()) Array_push(root, Entry_new(FAUX_RECENT_PATH, ENTRY_DIR));
 	
 	Array* entries = Array_new();
-	DIR* dh = opendir(ROMS_PATH);
+	DIR* dh = opendir(getRomsPath());
 	if (dh!=NULL) {
 		struct dirent *dp;
 		char* tmp;
 		char full_path[256];
-		sprintf(full_path, "%s/", ROMS_PATH);
+		sprintf(full_path, "%s/", getRomsPath());
 		tmp = full_path + strlen(full_path);
 		Array* emus = Array_new();
 		while((dp = readdir(dh)) != NULL) {
@@ -677,7 +710,7 @@ static Array* getRoot(void) {
 	// copied/modded from Directory_index
 	// we don't support hidden remaps here
 	char map_path[256];
-	sprintf(map_path, "%s/map.txt", ROMS_PATH);
+	sprintf(map_path, "%s/map.txt", getRomsPath());
 	if (entries->count>0 && exists(map_path)) {
 		FILE* file = fopen(map_path, "r");
 		if (file) {
@@ -902,8 +935,8 @@ static int isConsoleDir(char* path) {
 	strcpy(parent_dir, path);
 	tmp = strrchr(parent_dir, '/');
 	tmp[0] = '\0';
-	
-	return exactMatch(parent_dir, ROMS_PATH);
+
+	return exactMatch(parent_dir, getRomsPath());
 }
 
 static Array* getEntries(char* path){
@@ -915,13 +948,13 @@ static Array* getEntries(char* path){
 		char* tmp = strrchr(collated_path, '(');
 		// 1 because we want to keep the opening parenthesis to avoid collating "Game Boy Color" and "Game Boy Advance" into "Game Boy"
 		// but conditional so we can continue to support a bare tag name as a folder name
-		if (tmp) tmp[1] = '\0'; 
-		
-		DIR *dh = opendir(ROMS_PATH);
+		if (tmp) tmp[1] = '\0';
+
+		DIR *dh = opendir(getRomsPath());
 		if (dh!=NULL) {
 			struct dirent *dp;
 			char full_path[256];
-			sprintf(full_path, "%s/", ROMS_PATH);
+			sprintf(full_path, "%s/", getRomsPath());
 			tmp = full_path + strlen(full_path);
 			// while loop so we can collate paths, see above
 			while((dp = readdir(dh)) != NULL) {
@@ -991,8 +1024,8 @@ static void readyResumePath(char* rom_path, int type) {
 	can_resume = 0;
 	char path[256];
 	strcpy(path, rom_path);
-	
-	if (!prefixMatch(ROMS_PATH, path)) return;
+
+	if (!prefixMatch(getRomsPath(), path)) return;
 	
 	char auto_path[256];
 	if (type==ENTRY_DIR) {
@@ -1064,9 +1097,9 @@ static int autoResume(void) {
 }
 
 static void openPak(char* path) {
-	// NOTE: escapeSingleQuotes() modifies the passed string 
+	// NOTE: escapeSingleQuotes() modifies the passed string
 	// so we need to save the path before we call that
-	if (prefixMatch(ROMS_PATH, path)) {
+	if (prefixMatch(getRomsPath(), path)) {
 		addRecent(path, NULL);
 	}
 	saveLast(path);
@@ -1243,7 +1276,7 @@ static void loadLast(void) { // call after loading root directory
 	
 	while (last->count>0) {
 		char* path = Array_pop(last);
-		if (!exactMatch(path, ROMS_PATH)) { // romsDir is effectively root as far as restoring state after a game
+		if (!exactMatch(path, getRomsPath())) { // romsDir is effectively root as far as restoring state after a game
 			char collated_path[256];
 			collated_path[0] = '\0';
 			if (suffixMatch(")", path) && isConsoleDir(path)) {

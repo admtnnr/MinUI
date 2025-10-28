@@ -2941,9 +2941,27 @@ void Core_open(const char* core_path, const char* tag_name) {
 	sprintf((char*)core.states_dir, SHARED_USERDATA_PATH "/%s-%s", core.tag, core.name);
 	sprintf((char*)core.saves_dir, SDCARD_PATH "/Saves/%s", core.tag);
 	sprintf((char*)core.bios_dir, SDCARD_PATH "/Bios/%s", core.tag);
+
+#ifdef USE_CONFIG_SYSTEM
+	// Override paths from config if specified
+	minui_config_t* minui_config = CONFIG_get();
+	if (minui_config) {
+		if (minui_config->bios_path && minui_config->bios_path[0] != '\0') {
+			// Use custom BIOS path, appending the core tag
+			sprintf((char*)core.bios_dir, "%s/%s", minui_config->bios_path, core.tag);
+			LOG_info("Using custom BIOS path: %s\n", core.bios_dir);
+		}
+		if (minui_config->saves_path && minui_config->saves_path[0] != '\0') {
+			// Use custom saves path, appending the core tag
+			sprintf((char*)core.saves_dir, "%s/%s", minui_config->saves_path, core.tag);
+			LOG_info("Using custom saves path: %s\n", core.saves_dir);
+		}
+	}
+#endif
 	
 	char cmd[512];
-	sprintf(cmd, "mkdir -p \"%s\"; mkdir -p \"%s\"", core.config_dir, core.states_dir);
+	sprintf(cmd, "mkdir -p \"%s\"; mkdir -p \"%s\"; mkdir -p \"%s\"; mkdir -p \"%s\"",
+		core.config_dir, core.states_dir, core.saves_dir, core.bios_dir);
 	system(cmd);
 
 	set_environment_callback(environment_callback);

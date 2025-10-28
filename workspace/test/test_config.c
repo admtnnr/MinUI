@@ -290,6 +290,29 @@ void test_menu_timeout() {
     unlink("/tmp/minui_test.conf");
 }
 
+void test_custom_paths() {
+    TEST("Custom Paths Integration");
+
+    FILE* f = fopen("/tmp/minui_test.conf", "w");
+    fprintf(f, "rom_path=/custom/roms\n");
+    fprintf(f, "bios_path=/custom/bios\n");
+    fprintf(f, "saves_path=/custom/saves\n");
+    fclose(f);
+
+    minui_config_t* config = config_load("/tmp/minui_test.conf");
+
+    ASSERT(config != NULL, "Loaded config with custom paths");
+    ASSERT(config && config->rom_path != NULL, "rom_path is not NULL");
+    ASSERT(config && strcmp(config->rom_path, "/custom/roms") == 0, "rom_path = /custom/roms");
+    ASSERT(config && config->bios_path != NULL, "bios_path is not NULL");
+    ASSERT(config && strcmp(config->bios_path, "/custom/bios") == 0, "bios_path = /custom/bios");
+    ASSERT(config && config->saves_path != NULL, "saves_path is not NULL");
+    ASSERT(config && strcmp(config->saves_path, "/custom/saves") == 0, "saves_path = /custom/saves");
+
+    config_free(config);
+    unlink("/tmp/minui_test.conf");
+}
+
 int main() {
     printf("===========================================\n");
     printf("MinUI Configuration System Tests\n");
@@ -306,6 +329,7 @@ int main() {
     test_savestate_slots_range();
     test_log_levels();
     test_menu_timeout();
+    test_custom_paths();
 
     printf("\n===========================================\n");
     printf("Test Results\n");
