@@ -166,6 +166,66 @@ package: tidy
 	
 ###########################################################
 
+# QEMU Development Targets
+# These targets support development/testing using QEMU emulation
+# They do not modify existing build flows or packaging
+# See docs/DEV_QEMU.md for prerequisites and usage
+
+.PHONY: qemu-run qemu-help qemu-build-image qemu-system qemu-user
+
+# User-mode emulation (quick, no framebuffer/input)
+qemu-user:
+	# ----------------------------------------------------
+	# Run MinUI under QEMU user-mode emulation
+	# Requires: build/SYSTEM/rg35xx from 'make PLATFORM=rg35xx build'
+	# See: docs/DEV_QEMU.md
+	@./scripts/qemu/run-qemu-user.sh minui
+
+# Full system emulation (with framebuffer and input support)
+qemu-build-image:
+	# ----------------------------------------------------
+	# Build QEMU disk image with MinUI
+	# Requires: build/SYSTEM/rg35xx from 'make PLATFORM=rg35xx build system'
+	# See: docs/DEV_QEMU.md
+	@./scripts/qemu/build-qemu-image.sh
+
+qemu-system:
+	# ----------------------------------------------------
+	# Run MinUI under QEMU full system emulation
+	# Supports framebuffer and input devices
+	# Requires: QEMU disk image (make qemu-build-image)
+	# See: docs/DEV_QEMU.md
+	@./scripts/qemu/run-qemu-system.sh
+
+# Default to full system emulation (preferred for development)
+qemu-run: qemu-system
+
+qemu-help:
+	@echo "QEMU Development Targets:"
+	@echo "  qemu-run          - Run MinUI in QEMU (default: full system)"
+	@echo "  qemu-system       - Run MinUI with full system emulation (framebuffer + input)"
+	@echo "  qemu-user         - Run MinUI with user-mode emulation (no graphics)"
+	@echo "  qemu-build-image  - Build QEMU bootable disk image"
+	@echo ""
+	@echo "Prerequisites:"
+	@echo "  1. Install QEMU:"
+	@echo "     macOS: brew install qemu"
+	@echo "     Linux: sudo apt install qemu-system-arm qemu-utils"
+	@echo ""
+	@echo "  2. Build for rg35xx:"
+	@echo "     make PLATFORM=rg35xx build"
+	@echo "     make PLATFORM=rg35xx system"
+	@echo ""
+	@echo "  3. Build QEMU image (first time only):"
+	@echo "     make qemu-build-image"
+	@echo ""
+	@echo "  4. Run MinUI in QEMU:"
+	@echo "     make qemu-run"
+	@echo ""
+	@echo "For more information, see docs/DEV_QEMU.md"
+
+###########################################################
+
 .DEFAULT:
 	# ----------------------------------------------------
 	# $@
