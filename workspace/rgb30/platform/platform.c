@@ -18,6 +18,12 @@
 
 #include "scaler.h"
 
+// Phase 2 integration (conditional)
+#ifdef USE_CONFIG_SYSTEM
+#include "config.h"
+static minui_config_t* platform_config = NULL;
+#endif
+
 ///////////////////////////////
 
 #define RAW_UP		544
@@ -202,7 +208,18 @@ static int device_height;
 static int device_pitch;
 SDL_Surface* PLAT_initVideo(void) {
 	// LOG_info("PLAT_initVideo\n");
-	
+
+#ifdef USE_CONFIG_SYSTEM
+	// Load Phase 2 configuration
+	platform_config = config_load(NULL);
+	if (platform_config) {
+#ifdef DEBUG_PHASE2
+		LOG_info("Phase 2: Configuration loaded successfully\n");
+		config_print(platform_config, LOG_INFO);
+#endif
+	}
+#endif
+
 	SDL_InitSubSystem(SDL_INIT_VIDEO);
 	SDL_ShowCursor(0);
 	
@@ -332,9 +349,17 @@ void PLAT_quitVideo(void) {
 	SDL_DestroyTexture(vid.texture);
 	SDL_DestroyRenderer(vid.renderer);
 	SDL_DestroyWindow(vid.window);
-	
+
 	// system("cat /dev/zero > /dev/fb0 2>/dev/null");
 	SDL_Quit();
+
+#ifdef USE_CONFIG_SYSTEM
+	// Cleanup Phase 2 configuration
+	if (platform_config) {
+		config_free(platform_config);
+		platform_config = NULL;
+	}
+#endif
 }
 
 void PLAT_clearVideo(SDL_Surface* screen) {
