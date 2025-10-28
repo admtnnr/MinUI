@@ -1,0 +1,250 @@
+# MinUI Configuration for RG35XX
+#
+# Copy this file to /mnt/sdcard/.userdata/minui.conf to customize MinUI
+# All settings are optional - MinUI works perfectly without this file!
+#
+# RG35XX-specific notes:
+# - This device has hardware-accelerated graphics via Display Engine (DE)
+# - Multi-core ARM Cortex-A9, can benefit from threaded video
+# - Conservative CPU speeds recommended for battery life
+#
+# Last updated: 2025-10-27 (Phase 2 integration)
+
+# ==============================================================================
+# GRAPHICS SETTINGS (RG35XX-Specific)
+# ==============================================================================
+
+# Graphics backend
+# RG35XX uses custom hardware acceleration by default
+# Options: auto (keeps hardware path), sdl2 (software fallback), fbdev (basic)
+# Recommendation: Leave as auto unless testing
+graphics_backend=auto
+
+# Display scaling mode
+# Options: aspect, fullscreen, integer, native
+# Recommendation: aspect (maintains correct aspect ratio)
+display_scale=aspect
+
+# Display sharpness filter
+# Options: sharp, crisp, soft
+# Recommendation: sharp for pixel art (NES, SNES), soft for 3D (PSX, N64)
+display_sharpness=sharp
+
+# VSync mode
+# Options: 0 (off), 1 (lenient), 2 (strict)
+# RG35XX has hardware vsync via DE, recommend leaving at 1
+display_vsync=1
+
+# ==============================================================================
+# AUDIO SETTINGS
+# ==============================================================================
+
+# Audio latency in milliseconds
+# Range: 32-256
+# RG35XX recommendation: 64-96 for good balance
+audio_latency=64
+
+# Audio sample rate (0=auto)
+# RG35XX supports: 22050, 44100, 48000
+audio_sample_rate=0
+
+# ==============================================================================
+# EMULATION SETTINGS
+# ==============================================================================
+
+# Number of save state slots per game
+# Range: 1-10
+# More slots = more storage used
+savestate_slots=4
+
+# Frame skip mode
+# Options: 0 (off), 1 (auto), 2-4 (skip 1-3 frames)
+# RG35XX is powerful enough for most cores without frame skip
+frame_skip=0
+
+# Enable rewind feature
+# Options: 0 (off), 1 (on)
+# Warning: Uses significant RAM and CPU
+rewind_enabled=0
+
+# Fast forward speed multiplier
+# Options: 0 (unlimited), 2-10
+# Recommendation: 3x for comfortable fast-forward
+fast_forward_speed=3
+
+# ==============================================================================
+# PERFORMANCE SETTINGS (RG35XX-Specific)
+# ==============================================================================
+
+# Enable threaded video rendering
+# Options: 0 (off), 1 (on)
+# RG35XX has dual-core Cortex-A9, can benefit from threading
+# Recommendation: Try 1 if you want to test performance improvement
+# Note: Requires USE_FRAME_QUEUE=1 in build
+thread_video=0
+
+# CPU speed overrides (in MHz)
+# RG35XX stock frequencies:
+# - Default menu: ~600 MHz
+# - Default normal: ~1000 MHz
+# - Max: ~1500 MHz
+#
+# Set to 0 to use platform defaults
+# Only change if you know what you're doing!
+#
+# Conservative profile (better battery life):
+cpu_speed_menu=600
+cpu_speed_powersave=800
+cpu_speed_normal=1000
+cpu_speed_performance=1200
+#
+# Performance profile (maximum speed):
+# cpu_speed_menu=800
+# cpu_speed_powersave=1000
+# cpu_speed_normal=1200
+# cpu_speed_performance=1500
+
+# ==============================================================================
+# PATHS
+# ==============================================================================
+
+# Custom ROM path
+# Default: /mnt/sdcard/Roms
+# RG35XX typically uses default
+rom_path=/mnt/sdcard/Roms
+
+# Custom BIOS path
+# Default: /mnt/sdcard/Bios
+# Place PSX BIOS files here
+bios_path=/mnt/sdcard/Bios
+
+# Custom saves path
+# Default: /mnt/sdcard/Saves
+saves_path=/mnt/sdcard/Saves
+
+# ==============================================================================
+# UI SETTINGS
+# ==============================================================================
+
+# Show FPS counter
+# Options: 0 (off), 1 (on)
+# Useful for performance testing
+show_fps=0
+
+# Show battery indicator
+# Options: 0 (off), 1 (on)
+# RG35XX has battery monitoring
+show_battery=1
+
+# Menu auto-hide timeout (seconds)
+# Range: 0 (never), 1-300
+# 0 recommended for RG35XX
+menu_timeout=0
+
+# ==============================================================================
+# DEBUGGING
+# ==============================================================================
+
+# Enable debug mode
+# Options: 0 (off), 1 (on)
+# Enable for troubleshooting only
+debug=0
+
+# Log level
+# Options: 0 (errors only), 1 (warnings), 2 (info), 3 (debug)
+# 1 recommended for normal use
+log_level=1
+
+# ==============================================================================
+# RG35XX OPTIMIZATION PROFILES
+# ==============================================================================
+#
+# Choose a profile by uncommenting the settings below
+# Only one profile should be active at a time
+#
+# --- PROFILE 1: Maximum Battery Life ---
+# Lowest CPU speeds, vsync on, no extras
+# Expected battery: ~6-7 hours
+#
+# cpu_speed_menu=600
+# cpu_speed_powersave=700
+# cpu_speed_normal=900
+# cpu_speed_performance=1000
+# display_vsync=2
+# audio_latency=96
+# thread_video=0
+# rewind_enabled=0
+#
+# --- PROFILE 2: Balanced (Recommended) ---
+# Good performance with decent battery
+# Expected battery: ~5-6 hours
+#
+# cpu_speed_menu=600
+# cpu_speed_powersave=800
+# cpu_speed_normal=1000
+# cpu_speed_performance=1200
+# display_vsync=1
+# audio_latency=64
+# thread_video=0
+# rewind_enabled=0
+#
+# --- PROFILE 3: Maximum Performance ---
+# Highest speeds, threaded video, lowest latency
+# Expected battery: ~4-5 hours
+#
+# cpu_speed_menu=800
+# cpu_speed_powersave=1000
+# cpu_speed_normal=1200
+# cpu_speed_performance=1500
+# display_vsync=0
+# audio_latency=32
+# thread_video=1
+# rewind_enabled=0
+#
+# --- PROFILE 4: Testing/Development ---
+# Debug enabled, FPS shown, verbose logging
+#
+# debug=1
+# log_level=3
+# show_fps=1
+# display_vsync=1
+#
+# ==============================================================================
+# TROUBLESHOOTING
+# ==============================================================================
+#
+# Problem: Games run slowly
+# Solution: Increase cpu_speed_normal and cpu_speed_performance
+#           Try: cpu_speed_normal=1200, cpu_speed_performance=1500
+#
+# Problem: Audio crackling
+# Solution: Increase audio_latency
+#           Try: audio_latency=96 or 128
+#
+# Problem: Screen tearing
+# Solution: Set display_vsync=2
+#
+# Problem: Poor battery life
+# Solution: Lower CPU speeds
+#           Try Profile 1 (Maximum Battery Life) above
+#
+# Problem: Config not loading
+# Solution: Check file location: /mnt/sdcard/.userdata/minui.conf
+#           Enable debug: debug=1, log_level=3
+#           Check logs for errors
+#
+# ==============================================================================
+# NOTES
+# ==============================================================================
+#
+# - After editing, save as /mnt/sdcard/.userdata/minui.conf
+# - Restart MinUI for changes to take effect
+# - To reset to defaults, delete or rename this file
+# - See docs/CONFIGURATION.md for complete documentation
+# - See docs/INTEGRATION.md for platform integration details
+#
+# RG35XX Community Resources:
+# - https://github.com/shauninman/MinUI
+# - Reddit: r/RG35XX
+#
+# ==============================================================================
