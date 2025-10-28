@@ -19,6 +19,12 @@
 
 #include "scaler.h"
 
+// Phase 2 integration (conditional)
+#ifdef USE_CONFIG_SYSTEM
+#include "config.h"
+static minui_config_t* platform_config = NULL;
+#endif
+
 int is_cubexx = 0;
 int is_rg34xx = 0;
 int on_hdmi = 0;
@@ -406,7 +412,18 @@ static int device_pitch;
 static int rotate = 0;
 SDL_Surface* PLAT_initVideo(void) {
 	// LOG_info("PLAT_initVideo\n");
-	
+
+#ifdef USE_CONFIG_SYSTEM
+	// Load Phase 2 configuration
+	platform_config = config_load(NULL);
+	if (platform_config) {
+#ifdef DEBUG_PHASE2
+		LOG_info("Phase 2: Configuration loaded successfully\n");
+		config_print(platform_config, LOG_INFO);
+#endif
+	}
+#endif
+
 	char* model = getenv("RGXX_MODEL"); // TODO: use device?
 	is_cubexx = exactMatch("RGcubexx", model);
 	is_rg34xx = prefixMatch("RG34xx", model);
@@ -545,6 +562,14 @@ void PLAT_quitVideo(void) {
 
 	// system("cat /dev/zero > /dev/fb0 2>/dev/null");
 	SDL_Quit();
+
+#ifdef USE_CONFIG_SYSTEM
+	// Cleanup Phase 2 configuration
+	if (platform_config) {
+		config_free(platform_config);
+		platform_config = NULL;
+	}
+#endif
 }
 
 void PLAT_clearVideo(SDL_Surface* screen) {
