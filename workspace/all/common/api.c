@@ -20,6 +20,21 @@
 
 ///////////////////////////////
 
+// Global configuration (Phase 2)
+#ifdef USE_CONFIG_SYSTEM
+static minui_config_t* global_config = NULL;
+
+minui_config_t* CONFIG_get(void) {
+	return global_config;
+}
+
+void CONFIG_set(minui_config_t* config) {
+	global_config = config;
+}
+#endif
+
+///////////////////////////////
+
 void LOG_note(int level, const char* fmt, ...) {
 	char buf[1024] = {0};
 	va_list args;

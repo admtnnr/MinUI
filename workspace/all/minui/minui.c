@@ -1326,7 +1326,21 @@ int main (int argc, char *argv[]) {
 	
 	// now that (most of) the heavy lifting is done, take a load off
 	PWR_setCPUSpeed(CPU_SPEED_MENU);
+
+#ifdef USE_CONFIG_SYSTEM
+	// Apply Phase 2 configuration overrides
+	minui_config_t* minui_config = CONFIG_get();
+	if (minui_config && minui_config->display_vsync >= 0) {
+		GFX_setVsync(minui_config->display_vsync);
+		if (minui_config->debug) {
+			LOG_info("minui: Applied vsync setting: %d\n", minui_config->display_vsync);
+		}
+	} else {
+		GFX_setVsync(VSYNC_STRICT);
+	}
+#else
 	GFX_setVsync(VSYNC_STRICT);
+#endif
 
 	PAD_reset();
 	int dirty = 1;

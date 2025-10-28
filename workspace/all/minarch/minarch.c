@@ -4707,6 +4707,55 @@ int main(int argc , char* argv[]) {
 	Config_load(); // before init?
 	Config_init();
 	Config_readOptions(); // cores with boot logo option (eg. gb) need to load options early
+
+#ifdef USE_CONFIG_SYSTEM
+	// Apply Phase 2 configuration overrides
+	minui_config_t* minui_config = CONFIG_get();
+	if (minui_config) {
+		// Apply display settings
+		if (minui_config->display_sharpness == DISPLAY_SHARP) {
+			screen_sharpness = SHARPNESS_SHARP;
+		} else if (minui_config->display_sharpness == DISPLAY_CRISP) {
+			screen_sharpness = SHARPNESS_CRISP;
+		} else if (minui_config->display_sharpness == DISPLAY_SOFT) {
+			screen_sharpness = SHARPNESS_SOFT;
+		}
+
+		// Apply vsync setting
+		if (minui_config->display_vsync >= 0) {
+			prevent_tearing = minui_config->display_vsync;
+		}
+
+		// Apply scaling mode
+		if (minui_config->display_scale == DISPLAY_SCALE_ASPECT) {
+			screen_scaling = SCALE_ASPECT;
+		} else if (minui_config->display_scale == DISPLAY_SCALE_FULLSCREEN) {
+			screen_scaling = SCALE_FULLSCREEN;
+		} else if (minui_config->display_scale == DISPLAY_SCALE_INTEGER) {
+			screen_scaling = SCALE_CROPPED; // Map integer to cropped
+		}
+
+		// Apply performance settings
+		if (minui_config->thread_video >= 0) {
+			thread_video = minui_config->thread_video;
+		}
+
+		// Apply fast forward speed
+		if (minui_config->fast_forward_speed > 0) {
+			max_ff_speed = minui_config->fast_forward_speed - 1; // Config is 2-10x, var is 0-based (1-9)
+		}
+
+		// Apply debug/FPS display
+		if (minui_config->show_fps > 0) {
+			show_debug = minui_config->show_fps;
+		}
+
+		if (minui_config->debug) {
+			LOG_info("minarch: Applied Phase 2 configuration overrides\n");
+		}
+	}
+#endif
+
 	setOverclock(overclock);
 	GFX_setVsync(prevent_tearing);
 	

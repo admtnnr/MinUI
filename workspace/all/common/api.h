@@ -53,6 +53,15 @@ void LOG_note(int level, const char* fmt, ...);
 
 ///////////////////////////////
 
+// Configuration system (Phase 2)
+#ifdef USE_CONFIG_SYSTEM
+#include "config.h"
+minui_config_t* CONFIG_get(void);
+void CONFIG_set(minui_config_t* config);
+#endif
+
+///////////////////////////////
+
 extern uint32_t RGB_WHITE;
 extern uint32_t RGB_BLACK;
 extern uint32_t RGB_LIGHT_GRAY;

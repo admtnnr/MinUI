@@ -25,7 +25,6 @@
 // Phase 2 integration (conditional)
 #ifdef USE_CONFIG_SYSTEM
 #include "config.h"
-static minui_config_t* platform_config = NULL;
 #endif
 
 #ifdef USE_GFX_BACKEND
@@ -304,11 +303,12 @@ static int _;
 SDL_Surface* PLAT_initVideo(void) {
 #ifdef USE_CONFIG_SYSTEM
 	// Load configuration early
-	platform_config = config_load(NULL);  // NULL = default path
-	if (platform_config) {
-		if (platform_config->debug) {
+	minui_config_t* config = config_load(NULL);  // NULL = default path
+	CONFIG_set(config);  // Make config globally accessible
+	if (config) {
+		if (config->debug) {
 			LOG_info("Phase 2: Configuration loaded successfully\n");
-			config_print(platform_config, LOG_INFO);
+			config_print(config, LOG_INFO);
 		}
 	} else {
 		LOG_warn("Phase 2: Config system enabled but failed to load, using defaults\n");
@@ -366,9 +366,10 @@ void PLAT_quitVideo(void) {
 	SDL_Quit();
 
 #ifdef USE_CONFIG_SYSTEM
-	if (platform_config) {
-		config_free(platform_config);
-		platform_config = NULL;
+	minui_config_t* config = CONFIG_get();
+	if (config) {
+		config_free(config);
+		CONFIG_set(NULL);
 	}
 #endif
 }
