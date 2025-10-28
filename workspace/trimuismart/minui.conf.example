@@ -1,0 +1,355 @@
+# MinUI Configuration Example for TrimUI Smart
+# Location: /mnt/SDCARD/.userdata/minui.conf
+#
+# This file provides platform-specific configuration for TrimUI Smart.
+# The system works perfectly without this file - these are optional optimizations.
+#
+# TrimUI Smart Hardware:
+# - SoC: Allwinner A133 (quad-core ARM Cortex-A53 @ 1.5 GHz)
+# - Display: 320x240 IPS (portrait orientation, rotated to landscape)
+# - GPU: Mali-400 MP2 + Allwinner Display Engine (DE)
+# - RAM: 128MB DDR3
+# - Storage: MicroSD card
+
+# ============================================================================
+# OPTIMIZATION PROFILES FOR TRIMUI SMART
+# ============================================================================
+# Choose one profile below based on your priorities, or customize settings
+
+# ----------------------------------------------------------------------------
+# PROFILE 1: Battery Life (recommended for casual use)
+# ----------------------------------------------------------------------------
+# - Conservative CPU usage
+# - Single-threaded rendering (hardware path)
+# - Moderate audio latency
+# - Vsync enabled to prevent tearing
+#
+# Uncomment these settings:
+# cpu_speed_menu=800
+# cpu_speed_powersave=900
+# cpu_speed_normal=1200
+# cpu_speed_performance=1500
+# display_vsync=1
+# audio_latency=96
+# thread_video=0
+# debug=0
+
+# ----------------------------------------------------------------------------
+# PROFILE 2: Balanced (recommended)
+# ----------------------------------------------------------------------------
+# - Good balance of performance and battery
+# - Hardware-accelerated rendering (ION + Display Engine)
+# - Moderate audio latency
+# - Vsync enabled
+#
+# Uncomment these settings:
+# cpu_speed_menu=900
+# cpu_speed_powersave=1000
+# cpu_speed_normal=1300
+# cpu_speed_performance=1500
+# display_vsync=1
+# audio_latency=64
+# thread_video=0
+# debug=0
+
+# ----------------------------------------------------------------------------
+# PROFILE 3: Maximum Performance
+# ----------------------------------------------------------------------------
+# - Highest CPU speeds
+# - Experimental threaded video (requires USE_FRAME_QUEUE=1)
+# - Lowest audio latency
+# - Vsync enabled for smooth rendering
+#
+# Uncomment these settings:
+# cpu_speed_menu=1200
+# cpu_speed_powersave=1200
+# cpu_speed_normal=1500
+# cpu_speed_performance=1500
+# display_vsync=1
+# audio_latency=48
+# thread_video=1
+# debug=0
+
+# ----------------------------------------------------------------------------
+# PROFILE 4: Development/Testing
+# ----------------------------------------------------------------------------
+# - Moderate performance
+# - Debug logging enabled
+# - Performance metrics visible
+#
+# Uncomment these settings:
+# cpu_speed_menu=1000
+# cpu_speed_normal=1300
+# display_vsync=1
+# audio_latency=64
+# thread_video=0
+# debug=1
+# show_fps=1
+
+# ============================================================================
+# GRAPHICS SETTINGS
+# ============================================================================
+
+# Graphics backend selection
+# Options: auto, sdl2, fbdev, hardware
+# - auto: uses hardware ION + Display Engine acceleration (recommended)
+# - hardware: explicitly use ION/DE (same as auto for this platform)
+# - fbdev: software framebuffer (fallback, requires USE_FBDEV_BACKEND=1)
+# - sdl2: SDL2 software rendering (not recommended for this platform)
+# Default: auto (hardware acceleration)
+#gfx_backend=auto
+
+# Display scaling mode
+# Options: aspect, fullscreen, integer, native
+# - aspect: maintain aspect ratio with borders (recommended)
+# - fullscreen: stretch to fill screen
+# - integer: use integer scaling (crisp pixels, may have borders)
+# - native: no scaling (for 320x240 native resolution games)
+# Default: aspect
+#gfx_scale_mode=aspect
+
+# Screen sharpness
+# Range: 0-10 (0=softest, 10=sharpest)
+# Higher values emphasize pixels, lower values smooth them
+# On 320x240 display, sharpness is very noticeable
+# Default: 5
+#gfx_sharpness=5
+
+# Vsync (vertical synchronization)
+# 0=off (may tear), 1=on (smooth rendering)
+# Recommended: 1 for TrimUI Smart (eliminates tearing)
+# Default: 1
+#display_vsync=1
+
+# ============================================================================
+# AUDIO SETTINGS
+# ============================================================================
+
+# Audio buffer latency
+# Range: 16-256 milliseconds
+# - Lower: less audio delay, higher CPU usage, potential crackling
+# - Higher: more audio delay, lower CPU usage, smoother audio
+# Recommended: 64-96 for TrimUI Smart
+# Default: 64
+#audio_latency=64
+
+# Audio sample rate
+# Options: 44100, 48000
+# Most cores use 44100 Hz, some prefer 48000 Hz
+# Default: 44100
+#audio_sample_rate=44100
+
+# ============================================================================
+# EMULATION SETTINGS
+# ============================================================================
+
+# Save state slots
+# Range: 1-10
+# Number of save state slots per game
+# Default: 4
+#save_slots=4
+
+# Frame skip
+# 0=no skip (best quality), 1=skip 1 frame, 2=skip 2 frames, etc.
+# Use frame skip for demanding cores to maintain speed
+# Default: 0
+#frame_skip=0
+
+# Rewind support
+# 0=disabled, 1=enabled
+# Allows rewinding gameplay (uses significant RAM - careful on 128MB)
+# Default: 0
+#enable_rewind=0
+
+# Rewind buffer seconds
+# Range: 5-60 seconds
+# More seconds = more RAM usage
+# With 128MB RAM, keep this conservative
+# Default: 10
+#rewind_seconds=10
+
+# Fast-forward speed
+# Range: 1-10x normal speed
+# Multiplier for fast-forward function
+# Default: 2
+#fast_forward_speed=2
+
+# ============================================================================
+# PERFORMANCE SETTINGS
+# ============================================================================
+
+# Threaded video rendering
+# 0=single-threaded (stable), 1=multi-threaded (experimental)
+# REQUIRES: Building with USE_FRAME_QUEUE=1
+# May improve performance on quad-core Cortex-A53, but experimental
+# Default: 0
+#thread_video=0
+
+# CPU speed overrides (MHz)
+# These override default CPU governors
+# TrimUI Smart (A133) supports: 600-1500 MHz
+# Higher speeds = better performance but worse battery life
+# cpu_speed_menu: Menu navigation speed
+# cpu_speed_powersave: When battery is low
+# cpu_speed_normal: Normal gameplay
+# cpu_speed_performance: Demanding cores
+# Default: varies by governor
+#cpu_speed_menu=900
+#cpu_speed_powersave=1000
+#cpu_speed_normal=1300
+#cpu_speed_performance=1500
+
+# ============================================================================
+# PATH SETTINGS
+# ============================================================================
+
+# ROM directory
+# Absolute path to ROM files
+# Default: /mnt/SDCARD/Roms
+#path_roms=/mnt/SDCARD/Roms
+
+# BIOS directory
+# Absolute path to BIOS files
+# Default: /mnt/SDCARD/.userdata/bios
+#path_bios=/mnt/SDCARD/.userdata/bios
+
+# Save file directory
+# Absolute path to save files (.sav, .srm)
+# Default: /mnt/SDCARD/.userdata/saves
+#path_saves=/mnt/SDCARD/.userdata/saves
+
+# Save state directory
+# Absolute path to save states
+# Default: /mnt/SDCARD/.userdata/states
+#path_states=/mnt/SDCARD/.userdata/states
+
+# Screenshot directory
+# Absolute path to screenshots
+# Default: /mnt/SDCARD/.userdata/screenshots
+#path_screenshots=/mnt/SDCARD/.userdata/screenshots
+
+# ============================================================================
+# USER INTERFACE SETTINGS
+# ============================================================================
+
+# Show FPS counter
+# 0=hidden, 1=visible
+# Displays frames per second in corner
+# Default: 0
+#show_fps=0
+
+# Show battery indicator
+# 0=hidden, 1=visible
+# Displays battery status
+# Default: 1
+#show_battery=1
+
+# Menu timeout
+# Range: 0-300 seconds
+# Auto-exit menu after inactivity (0=disabled)
+# Default: 30
+#menu_timeout=30
+
+# ============================================================================
+# DEBUG SETTINGS
+# ============================================================================
+
+# Debug logging
+# 0=errors only, 1=info, 2=verbose
+# Higher levels log more information to console/file
+# Default: 0
+#debug=0
+
+# Log file path
+# Absolute path to log file (empty=console only)
+# Default: (none - logs to console)
+#log_file=/mnt/SDCARD/.userdata/minui.log
+
+# ============================================================================
+# TRIMUI SMART SPECIFIC NOTES
+# ============================================================================
+#
+# Hardware Acceleration:
+# - TrimUI Smart uses Allwinner Display Engine (DE) + ION memory allocation
+# - Hardware-accelerated scaling and format conversion
+# - Significantly faster than software rendering
+# - Keep gfx_backend=auto to use hardware acceleration
+# - The graphics backend abstraction is optional (USE_GFX_BACKEND=0 by default)
+#
+# Display Characteristics:
+# - Small 320x240 IPS screen (portrait, rotated to landscape)
+# - Pixel-perfect scaling for NES (256x240), Game Gear (160x144)
+# - Some cores will have borders due to aspect ratio
+# - Sharp pixels at native resolution - test gfx_sharpness settings
+#
+# Memory Limitations (128MB RAM):
+# - More comfortable than 64MB devices but still limited
+# - Be conservative with rewind (uses significant RAM)
+# - Use frame skip for very demanding cores (GBA, SNES with SA-1)
+# - Save slots should be kept reasonable (4-6 slots)
+#
+# CPU Performance:
+# - Quad-core Cortex-A53 @ 1.5 GHz max
+# - More powerful than Cortex-A7 devices
+# - Good performance for 8-bit and 16-bit era consoles
+# - Can handle GBA, SNES, Genesis, PC Engine, etc. full speed
+# - PSX may run but will be demanding
+#
+# Audio Latency:
+# - If you hear crackling, increase audio_latency to 96 or 128
+# - If input feels sluggish, decrease audio_latency to 48 or 32
+# - Sweet spot is usually 64-96ms for most cores
+# - Lower latency possible due to faster CPU vs Cortex-A7 devices
+#
+# CPU Speeds:
+# - Stock firmware manages CPU scaling automatically
+# - Override only if you need consistent performance
+# - Lower speeds improve battery life significantly
+# - 1500 MHz is maximum safe speed
+# - Quad-core means threading may benefit some workloads
+#
+# Thread Video (Experimental):
+# - Requires building with USE_FRAME_QUEUE=1
+# - May help with demanding cores on quad-core CPU
+# - More potential benefit vs dual-core devices
+# - Test thoroughly before enabling permanently
+# - Start with thread_video=0 until you need it
+#
+# Display Engine (DE):
+# - Allwinner's 2D display pipeline
+# - Supports hardware scaling, rotation, format conversion
+# - The platform code uses ION for zero-copy memory allocation
+# - Rotates portrait display to landscape automatically
+# - Triple buffering via page flipping
+#
+# Testing New Features:
+# - Start with USE_CONFIG_SYSTEM=1 only (safest)
+# - Test configuration loading and settings changes
+# - Enable USE_FRAME_QUEUE=1 only if you need threaded rendering
+# - Keep USE_GFX_BACKEND=0 to preserve hardware acceleration
+#
+# Build Examples:
+#   make PLATFORM=trimuismart USE_CONFIG_SYSTEM=1                    # Config only
+#   make PLATFORM=trimuismart USE_CONFIG_SYSTEM=1 USE_FRAME_QUEUE=1 # With threading
+#   make PLATFORM=trimuismart DEBUG_PHASE2=1                        # Debug logging
+#   make PLATFORM=trimuismart                                       # Stock build
+#
+# Comparison to Other Platforms:
+# - More powerful CPU than Miyoo Mini (Cortex-A53 vs A7)
+# - Lower resolution display (320x240 vs 640x480)
+# - Similar RAM (128MB like Mini Plus)
+# - Similar hardware acceleration approach (Allwinner DE vs MStar MI_GFX)
+# - Battery life is generally good due to small screen
+#
+# Recommended Cores:
+# - NES, SNES (non-SA-1): Full speed, pixel-perfect
+# - Genesis/Mega Drive: Full speed
+# - Game Boy / Game Boy Color: Perfect (native resolution)
+# - Game Boy Advance: Full speed with some demanding games needing frame skip
+# - PC Engine / TurboGrafx-16: Full speed
+# - Neo Geo Pocket: Perfect
+# - PSX: Playable but demanding (test per-game)
+
+# ============================================================================
+# END OF CONFIGURATION
+# ============================================================================
