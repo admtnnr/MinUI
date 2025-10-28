@@ -45,7 +45,7 @@ This document tracks which configuration options are fully integrated, partially
 |--------|--------|----------|-------|
 | `fast_forward_speed` | ✅ INTEGRATED | minarch.c:4744-4746 | Correctly maps config value (2-10x) to internal (0-9) |
 | `savestate_slots` | ✅ INTEGRATED | minarch.c:3009,4755-4758 | MENU_SLOT_COUNT now configurable (1-10 slots) |
-| `rewind_enabled` | ❌ NOT INTEGRATED | - | Rewind system needs initialization |
+| `rewind_enabled` | ❌ NOT IMPLEMENTED | - | No rewind system exists (would need state buffer management) |
 | `frame_skip` | ❌ NOT IMPLEMENTED | - | Feature not implemented in minarch (only commented code exists) |
 
 ### UI Settings
@@ -54,7 +54,7 @@ This document tracks which configuration options are fully integrated, partially
 |--------|--------|----------|-------|
 | `show_fps` | ✅ INTEGRATED | minarch.c:4749-4751 | Maps to show_debug variable |
 | `show_battery` | ✅ INTEGRATED | api.c:766-804 | Conditionally shows/hides battery indicator |
-| `menu_timeout` | ❌ NOT INTEGRATED | - | Menu system needs to implement timeout |
+| `menu_timeout` | ✅ INTEGRATED | minarch.c:4283-4421 | Auto-closes menu after N seconds of inactivity (0=never) |
 
 ### Path Settings
 
@@ -86,8 +86,10 @@ These configuration options are fully applied and functional:
 7. **savestate_slots** - Number of save state slots (1-10, default 8)
 8. **show_battery** - Show/hide battery indicator (0=hide, 1=show)
 9. **log_level** - Control logging verbosity (0=error, 1=warn, 2=info, 3=debug)
+10. **menu_timeout** - Auto-close menu after N seconds of inactivity (0=never timeout)
 
-**New in this update**: savestate_slots, show_battery, log_level
+**New in this update**: menu_timeout
+**Previous update**: savestate_slots, show_battery, log_level
 
 ---
 
@@ -233,6 +235,7 @@ Options marked as ❌ or 🔧 cannot be tested until integration code is added.
 - [x] savestate_slots
 - [ ] frame_skip (NOT IMPLEMENTED - feature doesn't exist)
 - [x] show_battery
+- [x] menu_timeout
 
 ### Phase 3: Complex (Platform-Specific)
 - [ ] audio_latency (requires refactoring)
@@ -241,22 +244,22 @@ Options marked as ❌ or 🔧 cannot be tested until integration code is added.
 
 ### Phase 4: Feature Flags
 - [ ] graphics_backend (requires USE_GFX_BACKEND=1)
-- [ ] rewind_enabled (if rewind system exists)
+- [ ] rewind_enabled (NOT IMPLEMENTED - no rewind system exists)
 
 ---
 
 ## Summary
 
 **Total Config Options**: 23
-- ✅ **Integrated and Working**: 9 (39%)
+- ✅ **Integrated and Working**: 10 (43%)
 - ⚠️ **Partial/Debug Only**: 1 (4%)
 - 🔧 **Needs Platform Work**: 5 (22%)
-- ❌ **Not Yet Integrated**: 7 (30%)
-- ❌ **Not Implemented**: 1 (4%)
+- ❌ **Not Yet Integrated**: 5 (22%)
+- ❌ **Not Implemented**: 2 (9%)
 
-**Current Focus**: 9 core display, performance, and UI options are working. The remaining options require more extensive integration work across multiple subsystems.
+**Current Focus**: 10 core display, performance, and UI options are working. The remaining options require more extensive integration work across multiple subsystems.
 
-**Recommendation**: Continue integrating remaining options based on priority: rewind_enabled, menu_timeout, and path settings are next logical candidates.
+**Recommendation**: Continue integrating remaining options based on priority: path settings (rom_path, bios_path, saves_path), button_swap, and analog_sensitivity are next logical candidates.
 
 ---
 

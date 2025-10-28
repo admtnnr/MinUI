@@ -4277,26 +4277,42 @@ static void Menu_loop(void) {
 	int dirty = 1;
 	int ignore_menu = 0;
 	int menu_start = 0;
-	
+
 	SDL_Surface* preview = SDL_CreateRGBSurface(SDL_SWSURFACE,DEVICE_WIDTH/2,DEVICE_HEIGHT/2,FIXED_DEPTH,RGBA_MASK_565); // TODO: retain until changed?
-	
+
+	// Menu timeout tracking
+	uint32_t last_input_time = SDL_GetTicks();
+	int menu_timeout_ms = 0;
+#ifdef USE_CONFIG_SYSTEM
+	minui_config_t* minui_config = CONFIG_get();
+	if (minui_config && minui_config->menu_timeout > 0) {
+		menu_timeout_ms = minui_config->menu_timeout * 1000; // Convert seconds to milliseconds
+	}
+#endif
+
 	while (show_menu) {
 		GFX_startFrame();
 		uint32_t now = SDL_GetTicks();
 
 		PAD_poll();
-		
+
+		// Check for any input to reset timeout
+		int has_input = 0;
+
 		if (PAD_justPressed(BTN_UP)) {
 			selected -= 1;
 			if (selected<0) selected += MENU_ITEM_COUNT;
 			dirty = 1;
+			has_input = 1;
 		}
 		else if (PAD_justPressed(BTN_DOWN)) {
 			selected += 1;
 			if (selected>=MENU_ITEM_COUNT) selected -= MENU_ITEM_COUNT;
 			dirty = 1;
+			has_input = 1;
 		}
 		else if (PAD_justPressed(BTN_LEFT)) {
+			has_input = 1;
 			if (menu.total_discs>1 && selected==ITEM_CONT) {
 				menu.disc -= 1;
 				if (menu.disc<0) menu.disc += menu.total_discs;
@@ -4310,6 +4326,7 @@ static void Menu_loop(void) {
 			}
 		}
 		else if (PAD_justPressed(BTN_RIGHT)) {
+			has_input = 1;
 			if (menu.total_discs>1 && selected==ITEM_CONT) {
 				menu.disc += 1;
 				if (menu.disc==menu.total_discs) menu.disc -= menu.total_discs;
@@ -4328,10 +4345,12 @@ static void Menu_loop(void) {
 		}
 		
 		if (PAD_justPressed(BTN_B) || (BTN_WAKE!=BTN_MENU && PAD_tappedMenu(now))) {
+			has_input = 1;
 			status = STATUS_CONT;
 			show_menu = 0;
 		}
 		else if (PAD_justPressed(BTN_A)) {
+			has_input = 1;
 			switch(selected) {
 				case ITEM_CONT:
 				if (menu.total_discs && rom_disc!=menu.disc) {
@@ -4388,6 +4407,17 @@ static void Menu_loop(void) {
 				break;
 			}
 			if (!show_menu) break;
+		}
+
+		// Handle input tracking and timeout
+		if (has_input) {
+			last_input_time = now;
+		}
+
+		// Check for menu timeout (if configured)
+		if (menu_timeout_ms > 0 && (now - last_input_time) >= menu_timeout_ms) {
+			show_menu = 0;
+			break;
 		}
 
 		PWR_update(&dirty, &show_setting, Menu_beforeSleep, Menu_afterSleep);

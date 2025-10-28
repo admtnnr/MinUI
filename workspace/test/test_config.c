@@ -265,6 +265,31 @@ void test_log_levels() {
     unlink("/tmp/minui_test.conf");
 }
 
+void test_menu_timeout() {
+    TEST("Menu Timeout");
+
+    // Test various timeout values (in seconds, 0 = never timeout)
+    int timeout_values[] = {0, 5, 10, 30, 60, 120};
+    int num_values = sizeof(timeout_values) / sizeof(timeout_values[0]);
+
+    for (int i = 0; i < num_values; i++) {
+        int timeout = timeout_values[i];
+
+        FILE* f = fopen("/tmp/minui_test.conf", "w");
+        fprintf(f, "menu_timeout=%d\n", timeout);
+        fclose(f);
+
+        minui_config_t* config = config_load("/tmp/minui_test.conf");
+
+        char msg[128];
+        snprintf(msg, sizeof(msg), "menu_timeout=%d", timeout);
+        ASSERT(config && config->menu_timeout == timeout, msg);
+        config_free(config);
+    }
+
+    unlink("/tmp/minui_test.conf");
+}
+
 int main() {
     printf("===========================================\n");
     printf("MinUI Configuration System Tests\n");
@@ -280,6 +305,7 @@ int main() {
     test_newly_integrated_options();
     test_savestate_slots_range();
     test_log_levels();
+    test_menu_timeout();
 
     printf("\n===========================================\n");
     printf("Test Results\n");
