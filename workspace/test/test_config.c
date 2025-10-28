@@ -207,6 +207,64 @@ void test_cpu_speeds() {
     unlink("/tmp/minui_test.conf");
 }
 
+void test_newly_integrated_options() {
+    TEST("Newly Integrated Options");
+
+    FILE* f = fopen("/tmp/minui_test.conf", "w");
+    fprintf(f, "savestate_slots=10\n");
+    fprintf(f, "show_battery=0\n");
+    fprintf(f, "log_level=3\n");
+    fclose(f);
+
+    minui_config_t* config = config_load("/tmp/minui_test.conf");
+    ASSERT(config != NULL, "Loaded config with new options");
+    ASSERT(config && config->savestate_slots == 10, "savestate_slots = 10");
+    ASSERT(config && config->show_battery == 0, "show_battery = 0");
+    ASSERT(config && config->log_level == 3, "log_level = 3");
+
+    config_free(config);
+    unlink("/tmp/minui_test.conf");
+}
+
+void test_savestate_slots_range() {
+    TEST("Save State Slots Range");
+
+    // Test valid range (1-10)
+    for (int slots = 1; slots <= 10; slots++) {
+        FILE* f = fopen("/tmp/minui_test.conf", "w");
+        fprintf(f, "savestate_slots=%d\n", slots);
+        fclose(f);
+
+        minui_config_t* config = config_load("/tmp/minui_test.conf");
+        char msg[64];
+        snprintf(msg, sizeof(msg), "savestate_slots=%d", slots);
+        ASSERT(config && config->savestate_slots == slots, msg);
+        config_free(config);
+    }
+
+    unlink("/tmp/minui_test.conf");
+}
+
+void test_log_levels() {
+    TEST("Log Levels");
+
+    const char* level_names[] = {"error", "warn", "info", "debug"};
+
+    for (int level = 0; level <= 3; level++) {
+        FILE* f = fopen("/tmp/minui_test.conf", "w");
+        fprintf(f, "log_level=%d\n", level);
+        fclose(f);
+
+        minui_config_t* config = config_load("/tmp/minui_test.conf");
+        char msg[64];
+        snprintf(msg, sizeof(msg), "log_level=%d (%s)", level, level_names[level]);
+        ASSERT(config && config->log_level == level, msg);
+        config_free(config);
+    }
+
+    unlink("/tmp/minui_test.conf");
+}
+
 int main() {
     printf("===========================================\n");
     printf("MinUI Configuration System Tests\n");
@@ -219,6 +277,9 @@ int main() {
     test_comments_and_empty_lines();
     test_paths();
     test_cpu_speeds();
+    test_newly_integrated_options();
+    test_savestate_slots_range();
+    test_log_levels();
 
     printf("\n===========================================\n");
     printf("Test Results\n");

@@ -44,16 +44,16 @@ This document tracks which configuration options are fully integrated, partially
 | Option | Status | Location | Notes |
 |--------|--------|----------|-------|
 | `fast_forward_speed` | ✅ INTEGRATED | minarch.c:4744-4746 | Correctly maps config value (2-10x) to internal (0-9) |
-| `savestate_slots` | ❌ NOT INTEGRATED | - | State system needs to read config value |
+| `savestate_slots` | ✅ INTEGRATED | minarch.c:3009,4755-4758 | MENU_SLOT_COUNT now configurable (1-10 slots) |
 | `rewind_enabled` | ❌ NOT INTEGRATED | - | Rewind system needs initialization |
-| `frame_skip` | ❌ NOT INTEGRATED | - | Frame skip system needs configuration |
+| `frame_skip` | ❌ NOT IMPLEMENTED | - | Feature not implemented in minarch (only commented code exists) |
 
 ### UI Settings
 
 | Option | Status | Location | Notes |
 |--------|--------|----------|-------|
 | `show_fps` | ✅ INTEGRATED | minarch.c:4749-4751 | Maps to show_debug variable |
-| `show_battery` | ❌ NOT INTEGRATED | - | UI needs to read and apply |
+| `show_battery` | ✅ INTEGRATED | api.c:766-804 | Conditionally shows/hides battery indicator |
 | `menu_timeout` | ❌ NOT INTEGRATED | - | Menu system needs to implement timeout |
 
 ### Path Settings
@@ -68,8 +68,8 @@ This document tracks which configuration options are fully integrated, partially
 
 | Option | Status | Location | Notes |
 |--------|--------|----------|-------|
-| `debug` | ⚠️ PARTIAL | minarch.c:4753-4755<br>minui.c:1335-1337 | Used for logging, but not globally available |
-| `log_level` | ❌ NOT INTEGRATED | - | Logging system doesn't check config value |
+| `debug` | ⚠️ PARTIAL | minarch.c:4760-4762<br>minui.c:1335-1337 | Used for logging, not globally available |
+| `log_level` | ✅ INTEGRATED | api.c:39-46 | LOG_note checks log_level before output (0=error, 1=warn, 2=info, 3=debug) |
 
 ---
 
@@ -83,6 +83,11 @@ These configuration options are fully applied and functional:
 4. **show_fps** - Shows FPS counter overlay during gameplay
 5. **fast_forward_speed** - Controls fast-forward multiplier (2x-10x)
 6. **thread_video** - Enables threaded video rendering (when USE_FRAME_QUEUE=1)
+7. **savestate_slots** - Number of save state slots (1-10, default 8)
+8. **show_battery** - Show/hide battery indicator (0=hide, 1=show)
+9. **log_level** - Control logging verbosity (0=error, 1=warn, 2=info, 3=debug)
+
+**New in this update**: savestate_slots, show_battery, log_level
 
 ---
 
@@ -224,10 +229,10 @@ Options marked as ❌ or 🔧 cannot be tested until integration code is added.
 
 ### Phase 2: Moderate Effort
 - [ ] debug flag (make globally accessible)
-- [ ] log_level (integrate with LOG_* functions)
-- [ ] savestate_slots
-- [ ] frame_skip
-- [ ] show_battery
+- [x] log_level (integrate with LOG_* functions)
+- [x] savestate_slots
+- [ ] frame_skip (NOT IMPLEMENTED - feature doesn't exist)
+- [x] show_battery
 
 ### Phase 3: Complex (Platform-Specific)
 - [ ] audio_latency (requires refactoring)
@@ -243,14 +248,15 @@ Options marked as ❌ or 🔧 cannot be tested until integration code is added.
 ## Summary
 
 **Total Config Options**: 23
-- ✅ **Integrated and Working**: 6 (26%)
+- ✅ **Integrated and Working**: 9 (39%)
 - ⚠️ **Partial/Debug Only**: 1 (4%)
 - 🔧 **Needs Platform Work**: 5 (22%)
-- ❌ **Not Yet Integrated**: 11 (48%)
+- ❌ **Not Yet Integrated**: 7 (30%)
+- ❌ **Not Implemented**: 1 (4%)
 
-**Current Focus**: The 6 most important display and performance options are working. The remaining options require more extensive integration work across multiple subsystems.
+**Current Focus**: 9 core display, performance, and UI options are working. The remaining options require more extensive integration work across multiple subsystems.
 
-**Recommendation**: Document current state, test the 6 working options, then decide which additional options are highest priority for integration.
+**Recommendation**: Continue integrating remaining options based on priority: rewind_enabled, menu_timeout, and path settings are next logical candidates.
 
 ---
 

@@ -36,6 +36,15 @@ void CONFIG_set(minui_config_t* config) {
 ///////////////////////////////
 
 void LOG_note(int level, const char* fmt, ...) {
+#ifdef USE_CONFIG_SYSTEM
+	// Check configured log level (0=error, 1=warn, 2=info, 3=debug)
+	minui_config_t* minui_config = CONFIG_get();
+	if (minui_config) {
+		// Only output if message level is at or below configured level
+		if (level > minui_config->log_level) return;
+	}
+#endif
+
 	char buf[1024] = {0};
 	va_list args;
 	va_start(args, fmt);
@@ -763,29 +772,45 @@ int GFX_blitHardwareGroup(SDL_Surface* dst, int show_setting) {
 		// TODO: handle wifi
 		int show_wifi = PLAT_isOnline(); // NOOOOO! not every frame!
 
+#ifdef USE_CONFIG_SYSTEM
+		// Check if battery should be shown (default: yes)
+		int show_battery = 1;
+		minui_config_t* minui_config = CONFIG_get();
+		if (minui_config) {
+			show_battery = minui_config->show_battery;
+		}
+#else
+		int show_battery = 1;
+#endif
+
 		int ww = SCALE1(PILL_SIZE-3);
-		ow = SCALE1(PILL_SIZE);
+		ow = show_battery ? SCALE1(PILL_SIZE) : 0;
 		if (show_wifi) ow += ww;
 
-		ox = dst->w - SCALE1(PADDING) - ow;
-		oy = SCALE1(PADDING);
-		GFX_blitPill(gfx.mode==MODE_MAIN ? ASSET_DARK_GRAY_PILL : ASSET_BLACK_PILL, dst, &(SDL_Rect){
-			ox,
-			oy,
-			ow,
-			SCALE1(PILL_SIZE)
-		});
-		if (show_wifi) {
-			SDL_Rect rect = asset_rects[ASSET_WIFI];
-			int x = ox;
-			int y = oy;
-			x += (SCALE1(PILL_SIZE) - rect.w) / 2;
-			y += (SCALE1(PILL_SIZE) - rect.h) / 2;
-			
-			GFX_blitAsset(ASSET_WIFI, NULL, dst, &(SDL_Rect){x,y});
-			ox += ww;
+		// Only draw if we have something to show
+		if (ow > 0) {
+			ox = dst->w - SCALE1(PADDING) - ow;
+			oy = SCALE1(PADDING);
+			GFX_blitPill(gfx.mode==MODE_MAIN ? ASSET_DARK_GRAY_PILL : ASSET_BLACK_PILL, dst, &(SDL_Rect){
+				ox,
+				oy,
+				ow,
+				SCALE1(PILL_SIZE)
+			});
+			if (show_wifi) {
+				SDL_Rect rect = asset_rects[ASSET_WIFI];
+				int x = ox;
+				int y = oy;
+				x += (SCALE1(PILL_SIZE) - rect.w) / 2;
+				y += (SCALE1(PILL_SIZE) - rect.h) / 2;
+
+				GFX_blitAsset(ASSET_WIFI, NULL, dst, &(SDL_Rect){x,y});
+				ox += ww;
+			}
+			if (show_battery) {
+				GFX_blitBattery(dst, &(SDL_Rect){ox,oy});
+			}
 		}
-		GFX_blitBattery(dst, &(SDL_Rect){ox,oy});
 	}
 	
 	return ow;

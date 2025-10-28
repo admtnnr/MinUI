@@ -3006,7 +3006,7 @@ void Core_close(void) {
 ///////////////////////////////////////
 
 #define MENU_ITEM_COUNT 5
-#define MENU_SLOT_COUNT 8
+static int MENU_SLOT_COUNT = 8; // Can be overridden by config (savestate_slots)
 
 enum {
 	ITEM_CONT,
@@ -4750,6 +4750,11 @@ int main(int argc , char* argv[]) {
 		// Apply debug/FPS display
 		if (minui_config->show_fps > 0) {
 			show_debug = minui_config->show_fps;
+		}
+
+		// Apply save state slots
+		if (minui_config->savestate_slots > 0 && minui_config->savestate_slots <= 10) {
+			MENU_SLOT_COUNT = minui_config->savestate_slots;
 		}
 
 		if (minui_config->debug) {
