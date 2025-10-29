@@ -1,0 +1,144 @@
+name: Dev Platform Tests
+
+on:
+  push:
+    branches: [ main, dev, 'claude/*' ]
+    paths:
+      - 'workspace/dev/**'
+      - 'workspace/all/**'
+      - '.github/workflows/test-dev-platform.yml'
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      - 'workspace/dev/**'
+      - 'workspace/all/**'
+
+jobs:
+  test-dev-platform:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          libsdl2-dev \
+          libsdl2-image-dev \
+          libsdl2-ttf-dev \
+          xvfb \
+          python3 \
+          python3-pip \
+          python3-xlib
+        pip3 install Pillow
+
+    - name: Build dev platform
+      run: |
+        export CROSS_COMPILE=" "
+        make PLATFORM=dev
+      working-directory: workspace
+
+    - name: Verify build outputs
+      run: |
+        ls -lh workspace/all/minui/build/dev/minui.elf
+        ls -lh workspace/all/minarch/build/dev/minarch.elf
+        echo "Build successful!"
+
+    - name: Run automated tests
+      run: |
+        # Start Xvfb for headless display
+        Xvfb :99 -screen 0 640x480x24 &
+        export DISPLAY=:99
+
+        # Wait for Xvfb to start
+        sleep 2
+
+        # Run tests
+        cd workspace/dev/tools
+        python3 run_tests.py --headless --output ../../test_output || true
+      continue-on-error: true
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results
+        path: |
+          workspace/test_output/
+        retention-days: 30
+
+    - name: Upload test report
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-report
+        path: |
+          workspace/test_output/test_report.html
+          workspace/test_output/test_report.json
+        retention-days: 30
+
+    - name: Check test results
+      run: |
+        if [ -f workspace/test_output/test_report.json ]; then
+          echo "Test report generated successfully"
+          cat workspace/test_output/test_report.json
+
+          # Extract pass/fail counts
+          passed=$(jq '.passed' workspace/test_output/test_report.json)
+          failed=$(jq '.failed' workspace/test_output/test_report.json)
+
+          echo "Tests passed: $passed"
+          echo "Tests failed: $failed"
+
+          # Fail if any tests failed
+          if [ "$failed" -gt 0 ]; then
+            echo "::error::$failed test(s) failed"
+            exit 1
+          fi
+        else
+          echo "::warning::No test report generated"
+        fi
+
+    - name: Comment on PR
+      uses: actions/github-script@v6
+      if: github.event_name == 'pull_request' && always()
+      with:
+        script: |
+          const fs = require('fs');
+
+          let comment = '## Dev Platform Test Results\n\n';
+
+          try {
+            const report = JSON.parse(fs.readFileSync('workspace/test_output/test_report.json', 'utf8'));
+
+            const emoji = report.failed === 0 ? '✅' : '❌';
+            comment += `${emoji} **${report.passed}** passed, **${report.failed}** failed (${report.total} total)\n\n`;
+
+            if (report.results && report.results.length > 0) {
+              comment += '### Test Details\n\n';
+              for (const result of report.results) {
+                const status = result.passed ? '✅' : '❌';
+                comment += `- ${status} ${result.name}\n`;
+                if (result.errors && result.errors.length > 0) {
+                  for (const error of result.errors) {
+                    comment += `  - ⚠️ ${error}\n`;
+                  }
+                }
+              }
+            }
+
+            comment += '\n[View full test report artifact](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})';
+          } catch (error) {
+            comment += '⚠️ Test report not available or could not be parsed\n';
+            comment += `Error: ${error.message}`;
+          }
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });

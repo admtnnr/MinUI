@@ -1,0 +1,25 @@
+{
+  "name": "Basic Navigation Test",
+  "description": "Test basic UI navigation with arrow keys",
+  "steps": [
+    {
+      "action": "wait",
+      "duration": 2000,
+      "comment": "Wait for MinUI to fully load"
+    },
+    {
+      "action": "screenshot",
+      "name": "initial_screen"
+    },
+    {
+      "action": "wait",
+      "duration": 500
+    },
+    {
+      "action": "compare",
+      "expected": "expected/initial_screen.png",
+      "actual": "latest",
+      "threshold": 0.95
+    }
+  ]
+}

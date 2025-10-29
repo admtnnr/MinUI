@@ -9,6 +9,8 @@
 #include <sys/stat.h>
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
+#include <time.h>
 
 #include "defines.h"
 #include "platform.h"
@@ -42,6 +44,72 @@ static int window_height = FIXED_HEIGHT;
 static SDL_GameController* gamepad = NULL;
 static SDL_Joystick* joystick = NULL;
 static int joystick_id = -1;
+
+// Phase 3.4: Testing tools state
+static int screenshot_requested = 0;
+static char screenshots_dir[256] = "./screenshots";
+static int input_recording = 0;
+static FILE* input_record_file = NULL;
+static FILE* input_playback_file = NULL;
+static int headless_mode = 0;
+
+///////////////////////////////
+// Phase 3.4: Testing tools helpers
+
+static void saveScreenshot(SDL_Surface* surface) {
+	if (!surface) return;
+
+	// Create screenshots directory if it doesn't exist
+	mkdir(screenshots_dir, 0755);
+
+	// Generate timestamp-based filename
+	time_t now = time(NULL);
+	struct tm* t = localtime(&now);
+	char filename[512];
+	snprintf(filename, sizeof(filename), "%s/screenshot_%04d%02d%02d_%02d%02d%02d.png",
+		screenshots_dir,
+		t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
+		t->tm_hour, t->tm_min, t->tm_sec);
+
+	// Save using SDL_image
+	if (IMG_SavePNG(surface, filename) == 0) {
+		LOG_info("Screenshot saved: %s\n", filename);
+	} else {
+		LOG_error("Failed to save screenshot: %s\n", IMG_GetError());
+	}
+}
+
+static void startInputRecording(const char* filename) {
+	if (input_record_file) {
+		fclose(input_record_file);
+	}
+
+	input_record_file = fopen(filename, "w");
+	if (input_record_file) {
+		input_recording = 1;
+		fprintf(input_record_file, "# MinUI Input Recording\n");
+		fprintf(input_record_file, "# Format: timestamp,button_state\n");
+		LOG_info("Input recording started: %s\n", filename);
+	} else {
+		LOG_error("Failed to start input recording: %s\n", filename);
+	}
+}
+
+static void stopInputRecording(void) {
+	if (input_record_file) {
+		fclose(input_record_file);
+		input_record_file = NULL;
+		input_recording = 0;
+		LOG_info("Input recording stopped\n");
+	}
+}
+
+static void recordInputState(int button_state) {
+	if (input_recording && input_record_file) {
+		Uint32 timestamp = SDL_GetTicks();
+		fprintf(input_record_file, "%u,%d\n", timestamp, button_state);
+	}
+}
 
 ///////////////////////////////
 // Input
@@ -114,6 +182,27 @@ void PLAT_pollInput(void) {
 		switch (event.type) {
 			case SDL_QUIT:
 				exit(0);
+				break;
+
+			case SDL_KEYDOWN:
+				// Phase 3.4: Special testing keys
+				if (event.key.keysym.sym == SDLK_F12) {
+					screenshot_requested = 1;
+					LOG_info("Screenshot requested (F12)\n");
+				}
+				else if (event.key.keysym.sym == SDLK_F11) {
+					if (input_recording) {
+						stopInputRecording();
+					} else {
+						char filename[256];
+						time_t now = time(NULL);
+						struct tm* t = localtime(&now);
+						snprintf(filename, sizeof(filename), "./input_recording_%04d%02d%02d_%02d%02d%02d.csv",
+							t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
+							t->tm_hour, t->tm_min, t->tm_sec);
+						startInputRecording(filename);
+					}
+				}
 				break;
 
 			// Hotplug support
@@ -290,6 +379,9 @@ void PLAT_pollInput(void) {
 
 	// Update current state
 	pad.is_pressed = now_pressed;
+
+	// Phase 3.4: Record input state if recording
+	recordInputState(now_pressed);
 }
 
 int PLAT_shouldWake(void) {
@@ -301,6 +393,19 @@ int PLAT_shouldWake(void) {
 // Video
 
 SDL_Surface* PLAT_initVideo(void) {
+	// Phase 3.4: Check for headless mode
+	const char* headless_env = getenv("MINUI_HEADLESS");
+	if (headless_env && strcmp(headless_env, "1") == 0) {
+		headless_mode = 1;
+		LOG_info("dev platform: Running in headless mode\n");
+	}
+
+	// Phase 3.4: Check for custom screenshots directory
+	const char* screenshots_env = getenv("MINUI_SCREENSHOTS_DIR");
+	if (screenshots_env) {
+		strncpy(screenshots_dir, screenshots_env, sizeof(screenshots_dir) - 1);
+	}
+
 	// Load platform configuration
 	platform_config_load(NULL, &platform_config);
 
@@ -339,6 +444,11 @@ SDL_Surface* PLAT_initVideo(void) {
 	Uint32 window_flags = SDL_WINDOW_SHOWN;
 	if (platform_config.window_mode == WINDOW_MODE_FULLSCREEN) {
 		window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+	}
+
+	// Phase 3.4: Hide window in headless mode
+	if (headless_mode) {
+		window_flags = SDL_WINDOW_HIDDEN;
 	}
 
 	window = SDL_CreateWindow(
@@ -506,6 +616,9 @@ SDL_Surface* PLAT_resizeVideo(int w, int h, int pitch) {
 }
 
 void PLAT_quitVideo(void) {
+	// Phase 3.4: Clean up recording files
+	stopInputRecording();
+
 	if (texture) {
 		SDL_DestroyTexture(texture);
 		texture = NULL;
@@ -595,13 +708,21 @@ scaler_t PLAT_getScaler(GFX_Renderer* renderer) {
 void PLAT_flip(SDL_Surface* surface, int sync) {
 	if (!surface || !renderer || !texture) return;
 
+	// Phase 3.4: Capture screenshot if requested
+	if (screenshot_requested) {
+		saveScreenshot(surface);
+		screenshot_requested = 0;
+	}
+
 	// Update texture from surface
 	SDL_UpdateTexture(texture, NULL, surface->pixels, surface->pitch);
 
-	// Render texture to screen
-	SDL_RenderClear(renderer);
-	SDL_RenderCopy(renderer, texture, NULL, NULL);
-	SDL_RenderPresent(renderer);
+	// Render texture to screen (skip in headless mode)
+	if (!headless_mode) {
+		SDL_RenderClear(renderer);
+		SDL_RenderCopy(renderer, texture, NULL, NULL);
+		SDL_RenderPresent(renderer);
+	}
 }
 
 int PLAT_supportsOverscan(void) {
