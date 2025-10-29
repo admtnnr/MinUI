@@ -20,6 +20,10 @@
 #include "config.h"
 #endif
 
+// Phase 3.2: Platform configuration
+#include "platform_config.h"
+#include "platform_config.c"  // Include implementation directly (simpler than modifying build system)
+
 // msettings stubs
 #include <msettings.h>
 
@@ -30,7 +34,7 @@ static SDL_Window* window = NULL;
 static SDL_Renderer* renderer = NULL;
 static SDL_Texture* texture = NULL;
 static SDL_Surface* screen = NULL;
-static int vsync_enabled = 1;
+static platform_config_t platform_config;
 static int window_width = FIXED_WIDTH;
 static int window_height = FIXED_HEIGHT;
 
@@ -113,13 +117,20 @@ int PLAT_shouldWake(void) {
 // Video
 
 SDL_Surface* PLAT_initVideo(void) {
-	// Load configuration if available
+	// Load platform configuration
+	platform_config_load(NULL, &platform_config);
+
+	// Apply platform config
+	window_width = platform_config.profile.screen_width;
+	window_height = platform_config.profile.screen_height;
+
+	// Load MinUI configuration if available
 #ifdef USE_CONFIG_SYSTEM
 	minui_config_t* config = config_load(NULL);
 	if (config) {
 		CONFIG_set(config);
 		if (DEBUG_enabled()) {
-			LOG_info("dev platform: Loaded configuration\n");
+			LOG_info("dev platform: Loaded MinUI configuration\n");
 		}
 	}
 #endif
@@ -130,14 +141,25 @@ SDL_Surface* PLAT_initVideo(void) {
 		exit(1);
 	}
 
-	// Create window
+	// Create window with profile-specific title
+	char window_title[256];
+	snprintf(window_title, sizeof(window_title), "MinUI Dev - %s (%dx%d)",
+		platform_config.profile.name,
+		window_width,
+		window_height);
+
+	Uint32 window_flags = SDL_WINDOW_SHOWN;
+	if (platform_config.window_mode == WINDOW_MODE_FULLSCREEN) {
+		window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+	}
+
 	window = SDL_CreateWindow(
-		"MinUI Dev Platform",
+		window_title,
 		SDL_WINDOWPOS_CENTERED,
 		SDL_WINDOWPOS_CENTERED,
 		window_width,
 		window_height,
-		SDL_WINDOW_SHOWN
+		window_flags
 	);
 
 	if (!window) {
@@ -148,7 +170,7 @@ SDL_Surface* PLAT_initVideo(void) {
 
 	// Create renderer with vsync if enabled
 	Uint32 renderer_flags = SDL_RENDERER_ACCELERATED;
-	if (vsync_enabled) {
+	if (platform_config.vsync) {
 		renderer_flags |= SDL_RENDERER_PRESENTVSYNC;
 	}
 
@@ -163,16 +185,38 @@ SDL_Surface* PLAT_initVideo(void) {
 	// Set default render scale quality
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0"); // nearest neighbor by default
 
-	// Create screen surface
+	// Determine pixel format and masks based on config
+	int bpp = platform_config.profile.bpp;
+	int depth = bpp * 8;
+	Uint32 rmask, gmask, bmask, amask;
+	Uint32 sdl_pixel_format;
+
+	if (bpp == 16) {
+		// RGB565 format
+		rmask = 0xF800;
+		gmask = 0x07E0;
+		bmask = 0x001F;
+		amask = 0x0000;
+		sdl_pixel_format = SDL_PIXELFORMAT_RGB565;
+	} else {
+		// ARGB8888 format
+		rmask = 0x00FF0000;
+		gmask = 0x0000FF00;
+		bmask = 0x000000FF;
+		amask = 0xFF000000;
+		sdl_pixel_format = SDL_PIXELFORMAT_ARGB8888;
+	}
+
+	// Create screen surface with profile dimensions and pixel format
 	screen = SDL_CreateRGBSurface(
 		0,
-		FIXED_WIDTH,
-		FIXED_HEIGHT,
-		FIXED_DEPTH,
-		0x00FF0000,  // R mask
-		0x0000FF00,  // G mask
-		0x000000FF,  // B mask
-		0xFF000000   // A mask
+		window_width,
+		window_height,
+		depth,
+		rmask,
+		gmask,
+		bmask,
+		amask
 	);
 
 	if (!screen) {
@@ -183,13 +227,13 @@ SDL_Surface* PLAT_initVideo(void) {
 		exit(1);
 	}
 
-	// Create texture for rendering
+	// Create texture for rendering with matching format
 	texture = SDL_CreateTexture(
 		renderer,
-		SDL_PIXELFORMAT_ARGB8888,
+		sdl_pixel_format,
 		SDL_TEXTUREACCESS_STREAMING,
-		FIXED_WIDTH,
-		FIXED_HEIGHT
+		window_width,
+		window_height
 	);
 
 	if (!texture) {
@@ -204,19 +248,72 @@ SDL_Surface* PLAT_initVideo(void) {
 	// Create SDCARD_PATH directory if it doesn't exist
 	mkdir(SDCARD_PATH, 0755);
 
-	LOG_info("dev platform: Video initialized (%dx%d, vsync=%d)\n",
-		window_width, window_height, vsync_enabled);
+	LOG_info("dev platform: Video initialized - Profile: %s\n", platform_config.active_profile);
+	LOG_info("  Display: %dx%d, %d-bit, VSync: %s\n",
+		window_width, window_height, bpp,
+		platform_config.vsync ? "ON" : "OFF");
 
 	return screen;
 }
 
 SDL_Surface* PLAT_resizeVideo(int w, int h, int pitch) {
-	// For dev platform, we don't dynamically resize
-	// Just return the existing screen surface
-	// TODO Phase 3.2: Implement dynamic resizing
-	(void)w;
-	(void)h;
-	(void)pitch;
+	// Resize the screen surface dynamically
+	// This is called when content needs a different resolution
+
+	if (!screen || (screen->w == w && screen->h == h)) {
+		return screen; // Already correct size
+	}
+
+	LOG_info("dev platform: Resizing video surface from %dx%d to %dx%d\n",
+		screen->w, screen->h, w, h);
+
+	// Destroy old surface and texture
+	if (texture) {
+		SDL_DestroyTexture(texture);
+		texture = NULL;
+	}
+	if (screen) {
+		SDL_FreeSurface(screen);
+		screen = NULL;
+	}
+
+	// Determine pixel format
+	int bpp = platform_config.profile.bpp;
+	int depth = bpp * 8;
+	Uint32 rmask, gmask, bmask, amask;
+	Uint32 sdl_pixel_format;
+
+	if (bpp == 16) {
+		rmask = 0xF800;
+		gmask = 0x07E0;
+		bmask = 0x001F;
+		amask = 0x0000;
+		sdl_pixel_format = SDL_PIXELFORMAT_RGB565;
+	} else {
+		rmask = 0x00FF0000;
+		gmask = 0x0000FF00;
+		bmask = 0x000000FF;
+		amask = 0xFF000000;
+		sdl_pixel_format = SDL_PIXELFORMAT_ARGB8888;
+	}
+
+	// Create new surface with requested dimensions
+	screen = SDL_CreateRGBSurface(0, w, h, depth, rmask, gmask, bmask, amask);
+	if (!screen) {
+		LOG_error("PLAT_resizeVideo: Failed to create surface: %s\n", SDL_GetError());
+		return NULL;
+	}
+
+	// Create new texture
+	texture = SDL_CreateTexture(renderer, sdl_pixel_format,
+		SDL_TEXTUREACCESS_STREAMING, w, h);
+	if (!texture) {
+		LOG_error("PLAT_resizeVideo: Failed to create texture: %s\n", SDL_GetError());
+		SDL_FreeSurface(screen);
+		screen = NULL;
+		return NULL;
+	}
+
 	return screen;
 }
 
@@ -260,7 +357,7 @@ void PLAT_clearAll(void) {
 }
 
 void PLAT_setVsync(int vsync) {
-	vsync_enabled = vsync;
+	platform_config.vsync = vsync;
 	LOG_info("dev platform: VSync set to %d (requires restart to apply)\n", vsync);
 }
 

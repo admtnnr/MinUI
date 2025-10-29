@@ -51,17 +51,56 @@ make PLATFORM=dev
 - `../all/minui/build/dev/minui.elf` - MinUI launcher
 - `../all/minarch/build/dev/minarch.elf` - MinArch emulator frontend
 
-### Known Limitations (Phase 3.1)
+## Phase 3.2 - Configurability (COMPLETE)
 
-- Window is fixed size (640x480)
-- No joystick/gamepad support yet
-- No dynamic resolution changes
+### Features Implemented
+
+- ✅ INI-based platform configuration (`platform.conf`)
+- ✅ Device profiles for real hardware simulation
+  - RG35XX (640x480, 16-bit)
+  - RGB30 (720x720, 16-bit)
+  - Miyoo Mini (640x480, 16-bit)
+  - TrimUI Smart (320x240, 16-bit)
+  - Custom profile support
+- ✅ Configurable window size and pixel format
+- ✅ Windowed/fullscreen mode support
+- ✅ Dynamic video surface resizing
+- ✅ VSync toggle
+
+### Configuration
+
+Edit `workspace/platform.conf` to change settings:
+
+```ini
+[general]
+profile = rg35xx  # or rgb30, miyoomini, trimuismart, custom
+window_mode = windowed  # or fullscreen
+vsync = 1
+pixel_format = RGB565  # or ARGB8888
+```
+
+Each profile accurately simulates real device specs.
+
+### Testing Different Devices
+
+```bash
+# Test RG35XX (640x480)
+# Edit platform.conf: profile = rg35xx
+export CROSS_COMPILE=" " && make PLATFORM=dev
+
+# Test RGB30 (720x720 square screen)
+# Edit platform.conf: profile = rgb30
+export CROSS_COMPILE=" " && make PLATFORM=dev
+```
+
+### Known Limitations
+
+- No joystick/gamepad support yet (Phase 3.3)
 - Button repeat logic not implemented
 - Scalers return NULL (SDL handles scaling)
 
 ### Next Steps (Future Phases)
 
-- **Phase 3.2**: Platform configuration system (device profiles, INI format)
 - **Phase 3.3**: Joystick/gamepad support
 - **Phase 3.4**: Testing tools (automation, screenshot capture)
 - **Phase 3.5**: Core emulator support
