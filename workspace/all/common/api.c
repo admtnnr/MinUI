@@ -71,6 +71,17 @@ void LOG_note(int level, const char* fmt, ...) {
 	fflush(stdout);
 }
 
+// Global debug flag helper
+int DEBUG_enabled(void) {
+#ifdef USE_CONFIG_SYSTEM
+	minui_config_t* config = CONFIG_get();
+	if (config) {
+		return config->debug;
+	}
+#endif
+	return 0; // Default: debug disabled
+}
+
 ///////////////////////////////
 
 uint32_t RGB_WHITE;
@@ -1171,11 +1182,76 @@ FALLBACK_IMPLEMENTATION int PLAT_lidChanged(int* state) { return 0; }
 PAD_Context pad;
 
 #define AXIS_DEADZONE 0x4000
+// Apply button swap configuration (called after platform input poll)
+static void PAD_applyButtonSwap(void) {
+#ifdef USE_CONFIG_SYSTEM
+	minui_config_t* config = CONFIG_get();
+	if (config && config->button_swap) {
+		// Swap A and B buttons in all button state fields
+		int has_a_pressed = pad.is_pressed & BTN_A;
+		int has_b_pressed = pad.is_pressed & BTN_B;
+
+		if (has_a_pressed && !has_b_pressed) {
+			pad.is_pressed &= ~BTN_A;
+			pad.is_pressed |= BTN_B;
+		} else if (has_b_pressed && !has_a_pressed) {
+			pad.is_pressed &= ~BTN_B;
+			pad.is_pressed |= BTN_A;
+		}
+
+		int has_a_just = pad.just_pressed & BTN_A;
+		int has_b_just = pad.just_pressed & BTN_B;
+
+		if (has_a_just && !has_b_just) {
+			pad.just_pressed &= ~BTN_A;
+			pad.just_pressed |= BTN_B;
+		} else if (has_b_just && !has_a_just) {
+			pad.just_pressed &= ~BTN_B;
+			pad.just_pressed |= BTN_A;
+		}
+
+		int has_a_rel = pad.just_released & BTN_A;
+		int has_b_rel = pad.just_released & BTN_B;
+
+		if (has_a_rel && !has_b_rel) {
+			pad.just_released &= ~BTN_A;
+			pad.just_released |= BTN_B;
+		} else if (has_b_rel && !has_a_rel) {
+			pad.just_released &= ~BTN_B;
+			pad.just_released |= BTN_A;
+		}
+
+		int has_a_rep = pad.just_repeated & BTN_A;
+		int has_b_rep = pad.just_repeated & BTN_B;
+
+		if (has_a_rep && !has_b_rep) {
+			pad.just_repeated &= ~BTN_A;
+			pad.just_repeated |= BTN_B;
+		} else if (has_b_rep && !has_a_rep) {
+			pad.just_repeated &= ~BTN_B;
+			pad.just_repeated |= BTN_A;
+		}
+	}
+#endif
+}
+
 void PAD_setAnalog(int neg_id,int pos_id,int value,int repeat_at) {
 	// LOG_info("neg %i pos %i value %i\n", neg_id, pos_id, value);
 	int neg = 1 << neg_id;
-	int pos = 1 << pos_id;	
-	if (value>AXIS_DEADZONE) { // pressing
+	int pos = 1 << pos_id;
+
+	// Apply analog sensitivity from config
+	int deadzone = AXIS_DEADZONE;
+#ifdef USE_CONFIG_SYSTEM
+	minui_config_t* config = CONFIG_get();
+	if (config && config->analog_sensitivity > 0 && config->analog_sensitivity <= 100) {
+		// analog_sensitivity: 1-100 (default 50)
+		// Map to deadzone: 1 = 0x7000 (less sensitive), 100 = 0x1000 (more sensitive)
+		deadzone = 0x7000 - ((config->analog_sensitivity - 1) * 0x6000 / 99);
+	}
+#endif
+
+	if (value>deadzone) { // pressing
 		if (!(pad.is_pressed&pos)) { // not pressing
 			pad.is_pressed 		|= pos; // set
 			pad.just_pressed	|= pos; // set
@@ -1224,6 +1300,13 @@ void PAD_reset(void) {
 	pad.just_released = BTN_NONE;
 	pad.just_repeated = BTN_NONE;
 }
+
+// Wrapper function that calls platform input poll and applies config
+void PAD_poll(void) {
+	PLAT_pollInput();
+	PAD_applyButtonSwap();
+}
+
 FALLBACK_IMPLEMENTATION void PLAT_pollInput(void) {
 	// reset transient state
 	pad.just_pressed = BTN_NONE;

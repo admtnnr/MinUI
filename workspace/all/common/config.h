@@ -147,6 +147,10 @@ typedef struct {
     int show_battery;               // 0=off, 1=on
     int menu_timeout;               // Auto-hide timeout in seconds (0=never)
 
+    // Input settings
+    int button_swap;                // 0=off, 1=swap A and B
+    int analog_sensitivity;         // 1-100 (default 50)
+
     // Debugging
     int debug;                      // 0=off, 1=on
     int log_level;                  // 0=error, 1=warn, 2=info, 3=debug
@@ -280,6 +284,8 @@ void config_print(const minui_config_t* config, int level);
 #define CONFIG_DEFAULT_SHOW_FPS         0
 #define CONFIG_DEFAULT_SHOW_BATTERY     1
 #define CONFIG_DEFAULT_MENU_TIMEOUT     0
+#define CONFIG_DEFAULT_BUTTON_SWAP      0
+#define CONFIG_DEFAULT_ANALOG_SENS      50
 #define CONFIG_DEFAULT_DEBUG            0
 #define CONFIG_DEFAULT_LOG_LEVEL        1
 

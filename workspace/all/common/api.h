@@ -19,6 +19,9 @@ enum {
 #define LOG_error(fmt, ...) LOG_note(LOG_ERROR, fmt, ##__VA_ARGS__)
 void LOG_note(int level, const char* fmt, ...);
 
+// Debug flag helper (globally accessible)
+int DEBUG_enabled(void);
+
 ///////////////////////////////
 
 #define PAGE_COUNT	2
@@ -251,9 +254,9 @@ extern PAD_Context pad;
 
 #define PAD_init PLAT_initInput
 #define PAD_quit PLAT_quitInput
-#define PAD_poll PLAT_pollInput
 #define PAD_wake PLAT_shouldWake
 
+void PAD_poll(void); // Wrapper that calls PLAT_pollInput and applies config
 void PAD_setAnalog(int neg, int pos, int value, int repeat_at); // internal
 
 void PAD_reset(void);

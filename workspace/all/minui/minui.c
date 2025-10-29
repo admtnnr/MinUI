@@ -27,7 +27,9 @@ static const char* getRomsPath(void) {
 		if (config && config->rom_path && config->rom_path[0] != '\0') {
 			strncpy(custom_roms_path, config->rom_path, sizeof(custom_roms_path) - 1);
 			custom_roms_path[sizeof(custom_roms_path) - 1] = '\0';
-			LOG_info("Using custom ROM path: %s\n", custom_roms_path);
+			if (DEBUG_enabled()) {
+				LOG_info("Using custom ROM path: %s\n", custom_roms_path);
+			}
 			return custom_roms_path;
 		}
 	}
@@ -1365,7 +1367,7 @@ int main (int argc, char *argv[]) {
 	minui_config_t* minui_config = CONFIG_get();
 	if (minui_config && minui_config->display_vsync >= 0) {
 		GFX_setVsync(minui_config->display_vsync);
-		if (minui_config->debug) {
+		if (DEBUG_enabled()) {
 			LOG_info("minui: Applied vsync setting: %d\n", minui_config->display_vsync);
 		}
 	} else {

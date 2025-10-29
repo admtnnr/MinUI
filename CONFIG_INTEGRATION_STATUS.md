@@ -64,11 +64,18 @@ This document tracks which configuration options are fully integrated, partially
 | `bios_path` | ✅ INTEGRATED | minarch.c:2949-2953 | Overrides core.bios_dir with custom path/{tag} |
 | `saves_path` | ✅ INTEGRATED | minarch.c:2954-2958 | Overrides core.saves_dir with custom path/{tag} |
 
+### Input Settings
+
+| Option | Status | Location | Notes |
+|--------|--------|----------|-------|
+| `button_swap` | ✅ INTEGRATED | api.c:1186-1236,1305-1308 | Swaps A and B buttons globally after platform input poll |
+| `analog_sensitivity` | ✅ INTEGRATED | api.c:1243-1252 | Adjusts analog stick deadzone (1=less sensitive, 100=more sensitive) |
+
 ### Debug Settings
 
 | Option | Status | Location | Notes |
 |--------|--------|----------|-------|
-| `debug` | ⚠️ PARTIAL | minarch.c:4760-4762<br>minui.c:1335-1337 | Used for logging, not globally available |
+| `debug` | ✅ INTEGRATED | api.c:75-83, api.h:23 | DEBUG_enabled() helper function globally accessible |
 | `log_level` | ✅ INTEGRATED | api.c:39-46 | LOG_note checks log_level before output (0=error, 1=warn, 2=info, 3=debug) |
 
 ---
@@ -90,9 +97,12 @@ These configuration options are fully applied and functional:
 11. **rom_path** - Custom ROM directory path (file browser looks here)
 12. **bios_path** - Custom BIOS directory path (cores look here for BIOS files)
 13. **saves_path** - Custom save files directory path (SRAM/RTC saves stored here)
+14. **button_swap** - Swap A and B buttons globally (0=normal, 1=swapped)
+15. **analog_sensitivity** - Analog stick sensitivity (1-100, default 50)
+16. **debug** - Enable verbose debug logging (0=off, 1=on)
 
-**New in this update**: rom_path, bios_path, saves_path
-**Previous update**: menu_timeout
+**New in this update**: button_swap, analog_sensitivity, debug flag (globally accessible)
+**Previous update**: rom_path, bios_path, saves_path
 
 ---
 
@@ -233,7 +243,7 @@ Options marked as ❌ or 🔧 cannot be tested until integration code is added.
 - [x] thread_video
 
 ### Phase 2: Moderate Effort
-- [ ] debug flag (make globally accessible)
+- [x] debug flag (DEBUG_enabled() globally accessible)
 - [x] log_level (integrate with LOG_* functions)
 - [x] savestate_slots
 - [ ] frame_skip (NOT IMPLEMENTED - feature doesn't exist)
@@ -244,6 +254,7 @@ Options marked as ❌ or 🔧 cannot be tested until integration code is added.
 - [ ] audio_latency (requires refactoring)
 - [ ] CPU speed overrides (per-platform)
 - [x] Path settings (rom_path, bios_path, saves_path)
+- [x] Input settings (button_swap, analog_sensitivity)
 
 ### Phase 4: Feature Flags
 - [ ] graphics_backend (requires USE_GFX_BACKEND=1)
@@ -254,15 +265,13 @@ Options marked as ❌ or 🔧 cannot be tested until integration code is added.
 ## Summary
 
 **Total Config Options**: 23
-- ✅ **Integrated and Working**: 13 (57%)
-- ⚠️ **Partial/Debug Only**: 1 (4%)
+- ✅ **Integrated and Working**: 16 (70%)
 - 🔧 **Needs Platform Work**: 5 (22%)
-- ❌ **Not Yet Integrated**: 2 (9%)
 - ❌ **Not Implemented**: 2 (9%)
 
-**Current Focus**: 13 options now integrated, covering display, performance, UI, and path settings. The remaining options are either platform-specific (CPU/audio), input-related (buttons/analog), or not implemented in the codebase.
+**Current Focus**: 16 options now integrated (70%!), covering display, performance, UI, path settings, input, and debugging. The remaining options are platform-specific (CPU speeds, audio latency) or features that don't exist in the codebase (rewind, frame_skip).
 
-**Recommendation**: Next candidates: button_swap and analog_sensitivity (input system integration), or debug flag (make globally accessible).
+**Recommendation**: Consider platform-specific options (audio_latency, CPU speeds) or graphics_backend if USE_GFX_BACKEND support is added.
 
 ---
 

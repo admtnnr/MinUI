@@ -2949,12 +2949,16 @@ void Core_open(const char* core_path, const char* tag_name) {
 		if (minui_config->bios_path && minui_config->bios_path[0] != '\0') {
 			// Use custom BIOS path, appending the core tag
 			sprintf((char*)core.bios_dir, "%s/%s", minui_config->bios_path, core.tag);
-			LOG_info("Using custom BIOS path: %s\n", core.bios_dir);
+			if (DEBUG_enabled()) {
+				LOG_info("Using custom BIOS path: %s\n", core.bios_dir);
+			}
 		}
 		if (minui_config->saves_path && minui_config->saves_path[0] != '\0') {
 			// Use custom saves path, appending the core tag
 			sprintf((char*)core.saves_dir, "%s/%s", minui_config->saves_path, core.tag);
-			LOG_info("Using custom saves path: %s\n", core.saves_dir);
+			if (DEBUG_enabled()) {
+				LOG_info("Using custom saves path: %s\n", core.saves_dir);
+			}
 		}
 	}
 #endif
@@ -4805,7 +4809,7 @@ int main(int argc , char* argv[]) {
 			MENU_SLOT_COUNT = minui_config->savestate_slots;
 		}
 
-		if (minui_config->debug) {
+		if (DEBUG_enabled()) {
 			LOG_info("minarch: Applied Phase 2 configuration overrides\n");
 		}
 	}

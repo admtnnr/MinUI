@@ -313,6 +313,69 @@ void test_custom_paths() {
     unlink("/tmp/minui_test.conf");
 }
 
+void test_input_options() {
+    TEST("Input Options (button_swap, analog_sensitivity)");
+
+    FILE* f = fopen("/tmp/minui_test.conf", "w");
+    fprintf(f, "button_swap=1\n");
+    fprintf(f, "analog_sensitivity=75\n");
+    fclose(f);
+
+    minui_config_t* config = config_load("/tmp/minui_test.conf");
+
+    ASSERT(config != NULL, "Loaded config with input options");
+    ASSERT(config && config->button_swap == 1, "button_swap = 1");
+    ASSERT(config && config->analog_sensitivity == 75, "analog_sensitivity = 75");
+
+    config_free(config);
+
+    // Test different analog sensitivity values
+    int sensitivity_values[] = {1, 25, 50, 75, 100};
+    for (int i = 0; i < 5; i++) {
+        int val = sensitivity_values[i];
+
+        f = fopen("/tmp/minui_test.conf", "w");
+        fprintf(f, "analog_sensitivity=%d\n", val);
+        fclose(f);
+
+        config = config_load("/tmp/minui_test.conf");
+
+        char msg[128];
+        snprintf(msg, sizeof(msg), "analog_sensitivity=%d", val);
+        ASSERT(config && config->analog_sensitivity == val, msg);
+        config_free(config);
+    }
+
+    unlink("/tmp/minui_test.conf");
+}
+
+void test_debug_flag() {
+    TEST("Debug Flag");
+
+    FILE* f = fopen("/tmp/minui_test.conf", "w");
+    fprintf(f, "debug=1\n");
+    fclose(f);
+
+    minui_config_t* config = config_load("/tmp/minui_test.conf");
+
+    ASSERT(config != NULL, "Loaded config with debug flag");
+    ASSERT(config && config->debug == 1, "debug = 1");
+
+    config_free(config);
+
+    // Test debug=0
+    f = fopen("/tmp/minui_test.conf", "w");
+    fprintf(f, "debug=0\n");
+    fclose(f);
+
+    config = config_load("/tmp/minui_test.conf");
+
+    ASSERT(config && config->debug == 0, "debug = 0");
+
+    config_free(config);
+    unlink("/tmp/minui_test.conf");
+}
+
 int main() {
     printf("===========================================\n");
     printf("MinUI Configuration System Tests\n");
@@ -330,6 +393,8 @@ int main() {
     test_log_levels();
     test_menu_timeout();
     test_custom_paths();
+    test_input_options();
+    test_debug_flag();
 
     printf("\n===========================================\n");
     printf("Test Results\n");
