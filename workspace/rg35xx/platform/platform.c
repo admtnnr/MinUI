@@ -22,6 +22,24 @@
 #include "de_atm7059.h"
 #include "scaler.h"
 
+// Phase 2 integration (conditional)
+#ifdef USE_CONFIG_SYSTEM
+#include "config.h"
+#endif
+
+#ifdef USE_GFX_BACKEND
+#include "gfx_backend.h"
+#ifdef USE_FBDEV_BACKEND
+extern const gfx_backend_t gfx_backend_fbdev_impl;
+#endif
+#endif
+
+#ifdef USE_FRAME_QUEUE
+#include "frame_queue.h"
+static frame_queue_t* video_frame_queue = NULL;
+static int use_threaded_video = 0;
+#endif
+
 ///////////////////////////////
 
 void PLAT_initInput(void) {
@@ -283,6 +301,20 @@ static struct VID_Context {
 static int _;
 
 SDL_Surface* PLAT_initVideo(void) {
+#ifdef USE_CONFIG_SYSTEM
+	// Load configuration early
+	minui_config_t* config = config_load(NULL);  // NULL = default path
+	CONFIG_set(config);  // Make config globally accessible
+	if (config) {
+		if (config->debug) {
+			LOG_info("Phase 2: Configuration loaded successfully\n");
+			config_print(config, LOG_INFO);
+		}
+	} else {
+		LOG_warn("Phase 2: Config system enabled but failed to load, using defaults\n");
+	}
+#endif
+
 	SDL_Init(SDL_INIT_VIDEO);
 	SDL_ShowCursor(0);
 	SDL_SetVideoMode(0,0,FIXED_DEPTH,0);
@@ -332,6 +364,14 @@ void PLAT_quitVideo(void) {
 	close(vid.fd_fb);
 	SDL_FreeSurface(vid.screen);
 	SDL_Quit();
+
+#ifdef USE_CONFIG_SYSTEM
+	minui_config_t* config = CONFIG_get();
+	if (config) {
+		config_free(config);
+		CONFIG_set(NULL);
+	}
+#endif
 }
 
 void PLAT_clearVideo(SDL_Surface* screen) {

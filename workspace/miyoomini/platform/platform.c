@@ -21,6 +21,11 @@
 #include "utils.h"
 #include "scaler.h"
 
+// Phase 2 integration (conditional)
+#ifdef USE_CONFIG_SYSTEM
+#include "config.h"
+#endif
+
 ///////////////////////////////
 // based on eggs GFXSample_rev15
 
@@ -208,7 +213,19 @@ SDL_Surface* PLAT_initVideo(void) {
 	is_plus = exists("/customer/app/axp_test");
 	is_560p = hasMode(MODES_PATH, "752x560p") && exists(USERDATA_PATH "/enable-560p");
 	LOG_info("is 560p: %i\n", is_560p);
-	
+
+#ifdef USE_CONFIG_SYSTEM
+	// Load Phase 2 configuration
+	minui_config_t* config = config_load(NULL);
+	CONFIG_set(config);  // Make config globally accessible
+	if (config) {
+#ifdef DEBUG_PHASE2
+		LOG_info("Phase 2: Configuration loaded successfully\n");
+		config_print(config, LOG_INFO);
+#endif
+	}
+#endif
+
 	putenv("SDL_HIDE_BATTERY=1"); // using MiniUI's custom SDL
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER);
 	SDL_ShowCursor(0);
@@ -236,11 +253,20 @@ SDL_Surface* PLAT_initVideo(void) {
 
 void PLAT_quitVideo(void) {
 	SDL_FreeSurface(vid.screen);
-	
+
 	MI_SYS_Munmap(vid.buffer.vadd, ALIGN4K(PAGE_SIZE));
 	MI_SYS_MMA_Free(vid.buffer.padd);
-	
+
 	SDL_Quit();
+
+#ifdef USE_CONFIG_SYSTEM
+	// Cleanup Phase 2 configuration
+	minui_config_t* config = CONFIG_get();
+	if (config) {
+		config_free(config);
+		CONFIG_set(NULL);
+	}
+#endif
 }
 
 void PLAT_clearVideo(SDL_Surface* screen) {

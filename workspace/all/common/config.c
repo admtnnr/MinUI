@@ -154,6 +154,10 @@ minui_config_t* config_load_defaults(void) {
     config->show_battery = CONFIG_DEFAULT_SHOW_BATTERY;
     config->menu_timeout = CONFIG_DEFAULT_MENU_TIMEOUT;
 
+    // Input settings
+    config->button_swap = CONFIG_DEFAULT_BUTTON_SWAP;
+    config->analog_sensitivity = CONFIG_DEFAULT_ANALOG_SENS;
+
     // Debugging
     config->debug = CONFIG_DEFAULT_DEBUG;
     config->log_level = CONFIG_DEFAULT_LOG_LEVEL;
@@ -246,6 +250,12 @@ static void parse_config_line(minui_config_t* config, const char* line) {
     }
     else if (strcmp(trimmed_key, "menu_timeout") == 0) {
         config->menu_timeout = parse_int(trimmed_value, 0, 300, 0);
+    }
+    else if (strcmp(trimmed_key, "button_swap") == 0) {
+        config->button_swap = parse_bool(trimmed_value);
+    }
+    else if (strcmp(trimmed_key, "analog_sensitivity") == 0) {
+        config->analog_sensitivity = parse_int(trimmed_value, 1, 100, CONFIG_DEFAULT_ANALOG_SENS);
     }
     else if (strcmp(trimmed_key, "debug") == 0) {
         config->debug = parse_bool(trimmed_value);
@@ -396,6 +406,10 @@ int config_save(const minui_config_t* config, const char* path) {
     fprintf(fp, "show_fps=%d\n", config->show_fps);
     fprintf(fp, "show_battery=%d\n", config->show_battery);
     fprintf(fp, "menu_timeout=%d\n\n", config->menu_timeout);
+
+    fprintf(fp, "# Input settings\n");
+    fprintf(fp, "button_swap=%d\n", config->button_swap);
+    fprintf(fp, "analog_sensitivity=%d\n\n", config->analog_sensitivity);
 
     fprintf(fp, "# Debugging\n");
     fprintf(fp, "debug=%d\n", config->debug);

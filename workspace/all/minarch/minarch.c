@@ -2941,9 +2941,31 @@ void Core_open(const char* core_path, const char* tag_name) {
 	sprintf((char*)core.states_dir, SHARED_USERDATA_PATH "/%s-%s", core.tag, core.name);
 	sprintf((char*)core.saves_dir, SDCARD_PATH "/Saves/%s", core.tag);
 	sprintf((char*)core.bios_dir, SDCARD_PATH "/Bios/%s", core.tag);
+
+#ifdef USE_CONFIG_SYSTEM
+	// Override paths from config if specified
+	minui_config_t* minui_config = CONFIG_get();
+	if (minui_config) {
+		if (minui_config->bios_path && minui_config->bios_path[0] != '\0') {
+			// Use custom BIOS path, appending the core tag
+			sprintf((char*)core.bios_dir, "%s/%s", minui_config->bios_path, core.tag);
+			if (DEBUG_enabled()) {
+				LOG_info("Using custom BIOS path: %s\n", core.bios_dir);
+			}
+		}
+		if (minui_config->saves_path && minui_config->saves_path[0] != '\0') {
+			// Use custom saves path, appending the core tag
+			sprintf((char*)core.saves_dir, "%s/%s", minui_config->saves_path, core.tag);
+			if (DEBUG_enabled()) {
+				LOG_info("Using custom saves path: %s\n", core.saves_dir);
+			}
+		}
+	}
+#endif
 	
 	char cmd[512];
-	sprintf(cmd, "mkdir -p \"%s\"; mkdir -p \"%s\"", core.config_dir, core.states_dir);
+	sprintf(cmd, "mkdir -p \"%s\"; mkdir -p \"%s\"; mkdir -p \"%s\"; mkdir -p \"%s\"",
+		core.config_dir, core.states_dir, core.saves_dir, core.bios_dir);
 	system(cmd);
 
 	set_environment_callback(environment_callback);
@@ -3006,7 +3028,7 @@ void Core_close(void) {
 ///////////////////////////////////////
 
 #define MENU_ITEM_COUNT 5
-#define MENU_SLOT_COUNT 8
+static int MENU_SLOT_COUNT = 8; // Can be overridden by config (savestate_slots)
 
 enum {
 	ITEM_CONT,
@@ -4277,26 +4299,42 @@ static void Menu_loop(void) {
 	int dirty = 1;
 	int ignore_menu = 0;
 	int menu_start = 0;
-	
+
 	SDL_Surface* preview = SDL_CreateRGBSurface(SDL_SWSURFACE,DEVICE_WIDTH/2,DEVICE_HEIGHT/2,FIXED_DEPTH,RGBA_MASK_565); // TODO: retain until changed?
-	
+
+	// Menu timeout tracking
+	uint32_t last_input_time = SDL_GetTicks();
+	int menu_timeout_ms = 0;
+#ifdef USE_CONFIG_SYSTEM
+	minui_config_t* minui_config = CONFIG_get();
+	if (minui_config && minui_config->menu_timeout > 0) {
+		menu_timeout_ms = minui_config->menu_timeout * 1000; // Convert seconds to milliseconds
+	}
+#endif
+
 	while (show_menu) {
 		GFX_startFrame();
 		uint32_t now = SDL_GetTicks();
 
 		PAD_poll();
-		
+
+		// Check for any input to reset timeout
+		int has_input = 0;
+
 		if (PAD_justPressed(BTN_UP)) {
 			selected -= 1;
 			if (selected<0) selected += MENU_ITEM_COUNT;
 			dirty = 1;
+			has_input = 1;
 		}
 		else if (PAD_justPressed(BTN_DOWN)) {
 			selected += 1;
 			if (selected>=MENU_ITEM_COUNT) selected -= MENU_ITEM_COUNT;
 			dirty = 1;
+			has_input = 1;
 		}
 		else if (PAD_justPressed(BTN_LEFT)) {
+			has_input = 1;
 			if (menu.total_discs>1 && selected==ITEM_CONT) {
 				menu.disc -= 1;
 				if (menu.disc<0) menu.disc += menu.total_discs;
@@ -4310,6 +4348,7 @@ static void Menu_loop(void) {
 			}
 		}
 		else if (PAD_justPressed(BTN_RIGHT)) {
+			has_input = 1;
 			if (menu.total_discs>1 && selected==ITEM_CONT) {
 				menu.disc += 1;
 				if (menu.disc==menu.total_discs) menu.disc -= menu.total_discs;
@@ -4328,10 +4367,12 @@ static void Menu_loop(void) {
 		}
 		
 		if (PAD_justPressed(BTN_B) || (BTN_WAKE!=BTN_MENU && PAD_tappedMenu(now))) {
+			has_input = 1;
 			status = STATUS_CONT;
 			show_menu = 0;
 		}
 		else if (PAD_justPressed(BTN_A)) {
+			has_input = 1;
 			switch(selected) {
 				case ITEM_CONT:
 				if (menu.total_discs && rom_disc!=menu.disc) {
@@ -4388,6 +4429,17 @@ static void Menu_loop(void) {
 				break;
 			}
 			if (!show_menu) break;
+		}
+
+		// Handle input tracking and timeout
+		if (has_input) {
+			last_input_time = now;
+		}
+
+		// Check for menu timeout (if configured)
+		if (menu_timeout_ms > 0 && (now - last_input_time) >= menu_timeout_ms) {
+			show_menu = 0;
+			break;
 		}
 
 		PWR_update(&dirty, &show_setting, Menu_beforeSleep, Menu_afterSleep);
@@ -4707,6 +4759,62 @@ int main(int argc , char* argv[]) {
 	Config_load(); // before init?
 	Config_init();
 	Config_readOptions(); // cores with boot logo option (eg. gb) need to load options early
+
+#ifdef USE_CONFIG_SYSTEM
+	// Apply Phase 2 configuration overrides
+	minui_config_t* minui_config = CONFIG_get();
+	if (minui_config) {
+		// Apply display settings
+		if (minui_config->display_sharpness == DISPLAY_SHARP) {
+			screen_sharpness = SHARPNESS_SHARP;
+		} else if (minui_config->display_sharpness == DISPLAY_CRISP) {
+			screen_sharpness = SHARPNESS_CRISP;
+		} else if (minui_config->display_sharpness == DISPLAY_SOFT) {
+			screen_sharpness = SHARPNESS_SOFT;
+		}
+
+		// Apply vsync setting
+		if (minui_config->display_vsync >= 0) {
+			prevent_tearing = minui_config->display_vsync;
+		}
+
+		// Apply scaling mode
+		if (minui_config->display_scale == DISPLAY_SCALE_ASPECT) {
+			screen_scaling = SCALE_ASPECT;
+		} else if (minui_config->display_scale == DISPLAY_SCALE_FULLSCREEN) {
+			screen_scaling = SCALE_FULLSCREEN;
+		} else if (minui_config->display_scale == DISPLAY_SCALE_INTEGER) {
+			screen_scaling = SCALE_CROPPED; // Map integer to cropped
+		} else if (minui_config->display_scale == DISPLAY_SCALE_NATIVE) {
+			screen_scaling = SCALE_NATIVE;
+		}
+
+		// Apply performance settings
+		if (minui_config->thread_video >= 0) {
+			thread_video = minui_config->thread_video;
+		}
+
+		// Apply fast forward speed
+		if (minui_config->fast_forward_speed > 0) {
+			max_ff_speed = minui_config->fast_forward_speed - 1; // Config is 2-10x, var is 0-based (1-9)
+		}
+
+		// Apply debug/FPS display
+		if (minui_config->show_fps > 0) {
+			show_debug = minui_config->show_fps;
+		}
+
+		// Apply save state slots
+		if (minui_config->savestate_slots > 0 && minui_config->savestate_slots <= 10) {
+			MENU_SLOT_COUNT = minui_config->savestate_slots;
+		}
+
+		if (DEBUG_enabled()) {
+			LOG_info("minarch: Applied Phase 2 configuration overrides\n");
+		}
+	}
+#endif
+
 	setOverclock(overclock);
 	GFX_setVsync(prevent_tearing);
 	

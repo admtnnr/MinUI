@@ -21,6 +21,11 @@
 #include "ion_sunxi.h"
 #include "scaler.h"
 
+// Phase 2 integration (conditional)
+#ifdef USE_CONFIG_SYSTEM
+#include "config.h"
+#endif
+
 ///////////////////////////////
 
 void PLAT_initInput(void) {
@@ -153,7 +158,19 @@ void ADC_quit();
 
 SDL_Surface* PLAT_initVideo(void) {
 	ADC_init();
-	
+
+#ifdef USE_CONFIG_SYSTEM
+	// Load Phase 2 configuration
+	minui_config_t* config = config_load(NULL);
+	CONFIG_set(config);  // Make config globally accessible
+	if (config) {
+#ifdef DEBUG_PHASE2
+		LOG_info("Phase 2: Configuration loaded successfully\n");
+		config_print(config, LOG_INFO);
+#endif
+	}
+#endif
+
 	SDL_Init(SDL_INIT_VIDEO);
 	SDL_ShowCursor(0);
 	vid.video = SDL_SetVideoMode(FIXED_HEIGHT, FIXED_WIDTH, FIXED_DEPTH, SDL_HWSURFACE);
@@ -262,8 +279,17 @@ void PLAT_quitVideo(void) {
 	close(vid.ion_fd);
 	close(vid.fb_fd);
 	close(vid.disp_fd);
-	
+
 	SDL_Quit();
+
+#ifdef USE_CONFIG_SYSTEM
+	// Cleanup Phase 2 configuration
+	minui_config_t* config = CONFIG_get();
+	if (config) {
+		config_free(config);
+		CONFIG_set(NULL);
+	}
+#endif
 }
 
 void PLAT_clearVideo(SDL_Surface* IGNORED) {

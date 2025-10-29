@@ -23,6 +23,23 @@ TARGET = minui
 INCDIR = -I. -I../common/ -I../../$(PLATFORM)/platform/
 SOURCE = $(TARGET).c ../common/scaler.c ../common/utils.c ../common/api.c ../../$(PLATFORM)/platform/platform.c
 
+# Phase 2 components (conditional)
+ifdef USE_CONFIG_SYSTEM
+    SOURCE += ../common/config.c
+endif
+
+ifdef USE_GFX_BACKEND
+    SOURCE += ../common/gfx_backend.c
+endif
+
+ifdef USE_FBDEV_BACKEND
+    SOURCE += ../common/gfx_backend_fbdev.c
+endif
+
+ifdef USE_FRAME_QUEUE
+    SOURCE += ../common/frame_queue.c
+endif
+
 CC = $(CROSS_COMPILE)gcc
 CFLAGS   = $(ARCH) -fomit-frame-pointer
 CFLAGS  += $(INCDIR) -DPLATFORM=\"$(PLATFORM)\" -DUSE_$(SDL) -Ofast -std=gnu99

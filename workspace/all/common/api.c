@@ -20,7 +20,31 @@
 
 ///////////////////////////////
 
+// Global configuration (Phase 2)
+#ifdef USE_CONFIG_SYSTEM
+static minui_config_t* global_config = NULL;
+
+minui_config_t* CONFIG_get(void) {
+	return global_config;
+}
+
+void CONFIG_set(minui_config_t* config) {
+	global_config = config;
+}
+#endif
+
+///////////////////////////////
+
 void LOG_note(int level, const char* fmt, ...) {
+#ifdef USE_CONFIG_SYSTEM
+	// Check configured log level (0=error, 1=warn, 2=info, 3=debug)
+	minui_config_t* minui_config = CONFIG_get();
+	if (minui_config) {
+		// Only output if message level is at or below configured level
+		if (level > minui_config->log_level) return;
+	}
+#endif
+
 	char buf[1024] = {0};
 	va_list args;
 	va_start(args, fmt);
@@ -45,6 +69,17 @@ void LOG_note(int level, const char* fmt, ...) {
 		break;
 	}
 	fflush(stdout);
+}
+
+// Global debug flag helper
+int DEBUG_enabled(void) {
+#ifdef USE_CONFIG_SYSTEM
+	minui_config_t* config = CONFIG_get();
+	if (config) {
+		return config->debug;
+	}
+#endif
+	return 0; // Default: debug disabled
 }
 
 ///////////////////////////////
@@ -748,29 +783,45 @@ int GFX_blitHardwareGroup(SDL_Surface* dst, int show_setting) {
 		// TODO: handle wifi
 		int show_wifi = PLAT_isOnline(); // NOOOOO! not every frame!
 
+#ifdef USE_CONFIG_SYSTEM
+		// Check if battery should be shown (default: yes)
+		int show_battery = 1;
+		minui_config_t* minui_config = CONFIG_get();
+		if (minui_config) {
+			show_battery = minui_config->show_battery;
+		}
+#else
+		int show_battery = 1;
+#endif
+
 		int ww = SCALE1(PILL_SIZE-3);
-		ow = SCALE1(PILL_SIZE);
+		ow = show_battery ? SCALE1(PILL_SIZE) : 0;
 		if (show_wifi) ow += ww;
 
-		ox = dst->w - SCALE1(PADDING) - ow;
-		oy = SCALE1(PADDING);
-		GFX_blitPill(gfx.mode==MODE_MAIN ? ASSET_DARK_GRAY_PILL : ASSET_BLACK_PILL, dst, &(SDL_Rect){
-			ox,
-			oy,
-			ow,
-			SCALE1(PILL_SIZE)
-		});
-		if (show_wifi) {
-			SDL_Rect rect = asset_rects[ASSET_WIFI];
-			int x = ox;
-			int y = oy;
-			x += (SCALE1(PILL_SIZE) - rect.w) / 2;
-			y += (SCALE1(PILL_SIZE) - rect.h) / 2;
-			
-			GFX_blitAsset(ASSET_WIFI, NULL, dst, &(SDL_Rect){x,y});
-			ox += ww;
+		// Only draw if we have something to show
+		if (ow > 0) {
+			ox = dst->w - SCALE1(PADDING) - ow;
+			oy = SCALE1(PADDING);
+			GFX_blitPill(gfx.mode==MODE_MAIN ? ASSET_DARK_GRAY_PILL : ASSET_BLACK_PILL, dst, &(SDL_Rect){
+				ox,
+				oy,
+				ow,
+				SCALE1(PILL_SIZE)
+			});
+			if (show_wifi) {
+				SDL_Rect rect = asset_rects[ASSET_WIFI];
+				int x = ox;
+				int y = oy;
+				x += (SCALE1(PILL_SIZE) - rect.w) / 2;
+				y += (SCALE1(PILL_SIZE) - rect.h) / 2;
+
+				GFX_blitAsset(ASSET_WIFI, NULL, dst, &(SDL_Rect){x,y});
+				ox += ww;
+			}
+			if (show_battery) {
+				GFX_blitBattery(dst, &(SDL_Rect){ox,oy});
+			}
 		}
-		GFX_blitBattery(dst, &(SDL_Rect){ox,oy});
 	}
 	
 	return ow;
@@ -1131,11 +1182,76 @@ FALLBACK_IMPLEMENTATION int PLAT_lidChanged(int* state) { return 0; }
 PAD_Context pad;
 
 #define AXIS_DEADZONE 0x4000
+// Apply button swap configuration (called after platform input poll)
+static void PAD_applyButtonSwap(void) {
+#ifdef USE_CONFIG_SYSTEM
+	minui_config_t* config = CONFIG_get();
+	if (config && config->button_swap) {
+		// Swap A and B buttons in all button state fields
+		int has_a_pressed = pad.is_pressed & BTN_A;
+		int has_b_pressed = pad.is_pressed & BTN_B;
+
+		if (has_a_pressed && !has_b_pressed) {
+			pad.is_pressed &= ~BTN_A;
+			pad.is_pressed |= BTN_B;
+		} else if (has_b_pressed && !has_a_pressed) {
+			pad.is_pressed &= ~BTN_B;
+			pad.is_pressed |= BTN_A;
+		}
+
+		int has_a_just = pad.just_pressed & BTN_A;
+		int has_b_just = pad.just_pressed & BTN_B;
+
+		if (has_a_just && !has_b_just) {
+			pad.just_pressed &= ~BTN_A;
+			pad.just_pressed |= BTN_B;
+		} else if (has_b_just && !has_a_just) {
+			pad.just_pressed &= ~BTN_B;
+			pad.just_pressed |= BTN_A;
+		}
+
+		int has_a_rel = pad.just_released & BTN_A;
+		int has_b_rel = pad.just_released & BTN_B;
+
+		if (has_a_rel && !has_b_rel) {
+			pad.just_released &= ~BTN_A;
+			pad.just_released |= BTN_B;
+		} else if (has_b_rel && !has_a_rel) {
+			pad.just_released &= ~BTN_B;
+			pad.just_released |= BTN_A;
+		}
+
+		int has_a_rep = pad.just_repeated & BTN_A;
+		int has_b_rep = pad.just_repeated & BTN_B;
+
+		if (has_a_rep && !has_b_rep) {
+			pad.just_repeated &= ~BTN_A;
+			pad.just_repeated |= BTN_B;
+		} else if (has_b_rep && !has_a_rep) {
+			pad.just_repeated &= ~BTN_B;
+			pad.just_repeated |= BTN_A;
+		}
+	}
+#endif
+}
+
 void PAD_setAnalog(int neg_id,int pos_id,int value,int repeat_at) {
 	// LOG_info("neg %i pos %i value %i\n", neg_id, pos_id, value);
 	int neg = 1 << neg_id;
-	int pos = 1 << pos_id;	
-	if (value>AXIS_DEADZONE) { // pressing
+	int pos = 1 << pos_id;
+
+	// Apply analog sensitivity from config
+	int deadzone = AXIS_DEADZONE;
+#ifdef USE_CONFIG_SYSTEM
+	minui_config_t* config = CONFIG_get();
+	if (config && config->analog_sensitivity > 0 && config->analog_sensitivity <= 100) {
+		// analog_sensitivity: 1-100 (default 50)
+		// Map to deadzone: 1 = 0x7000 (less sensitive), 100 = 0x1000 (more sensitive)
+		deadzone = 0x7000 - ((config->analog_sensitivity - 1) * 0x6000 / 99);
+	}
+#endif
+
+	if (value>deadzone) { // pressing
 		if (!(pad.is_pressed&pos)) { // not pressing
 			pad.is_pressed 		|= pos; // set
 			pad.just_pressed	|= pos; // set
@@ -1184,6 +1300,13 @@ void PAD_reset(void) {
 	pad.just_released = BTN_NONE;
 	pad.just_repeated = BTN_NONE;
 }
+
+// Wrapper function that calls platform input poll and applies config
+void PAD_poll(void) {
+	PLAT_pollInput();
+	PAD_applyButtonSwap();
+}
+
 FALLBACK_IMPLEMENTATION void PLAT_pollInput(void) {
 	// reset transient state
 	pad.just_pressed = BTN_NONE;

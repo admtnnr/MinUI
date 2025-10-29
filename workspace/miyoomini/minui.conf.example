@@ -1,0 +1,320 @@
+# MinUI Configuration Example for Miyoo Mini / Mini Plus
+# Location: /mnt/SDCARD/.userdata/minui.conf
+#
+# This file provides platform-specific configuration for Miyoo Mini devices.
+# The system works perfectly without this file - these are optional optimizations.
+#
+# Miyoo Mini Hardware:
+# - SoC: MStar MSC313E (Cortex-A7 dual-core @ 1.2 GHz)
+# - Display: 640x480 IPS (Mini), 752x560 IPS (Plus if enabled)
+# - GPU: Hardware-accelerated MI_GFX blit engine
+# - RAM: 64MB (Mini), 128MB (Plus)
+# - Storage: MicroSD card
+
+# ============================================================================
+# OPTIMIZATION PROFILES FOR MIYOO MINI
+# ============================================================================
+# Choose one profile below based on your priorities, or customize settings
+
+# ----------------------------------------------------------------------------
+# PROFILE 1: Maximum Battery Life (recommended for Mini 64MB)
+# ----------------------------------------------------------------------------
+# - Minimal CPU usage
+# - Single-threaded rendering (hardware path)
+# - Lower audio latency settings
+# - Vsync enabled to prevent tearing
+#
+# Uncomment these settings:
+# cpu_speed_menu=600
+# cpu_speed_powersave=600
+# cpu_speed_normal=900
+# cpu_speed_performance=1200
+# display_vsync=1
+# audio_latency=96
+# thread_video=0
+# debug=0
+
+# ----------------------------------------------------------------------------
+# PROFILE 2: Balanced (recommended for Mini Plus 128MB)
+# ----------------------------------------------------------------------------
+# - Good balance of performance and battery
+# - Hardware-accelerated rendering
+# - Moderate audio latency
+# - Vsync enabled
+#
+# Uncomment these settings:
+# cpu_speed_menu=800
+# cpu_speed_powersave=800
+# cpu_speed_normal=1000
+# cpu_speed_performance=1200
+# display_vsync=1
+# audio_latency=64
+# thread_video=0
+# debug=0
+
+# ----------------------------------------------------------------------------
+# PROFILE 3: Maximum Performance
+# ----------------------------------------------------------------------------
+# - Highest CPU speeds
+# - Experimental threaded video (requires USE_FRAME_QUEUE=1)
+# - Lowest audio latency
+# - Vsync enabled for smooth rendering
+#
+# Uncomment these settings:
+# cpu_speed_menu=1000
+# cpu_speed_powersave=900
+# cpu_speed_normal=1200
+# cpu_speed_performance=1200
+# display_vsync=1
+# audio_latency=32
+# thread_video=1
+# debug=0
+
+# ----------------------------------------------------------------------------
+# PROFILE 4: Development/Testing
+# ----------------------------------------------------------------------------
+# - Moderate performance
+# - Debug logging enabled
+# - Performance metrics visible
+#
+# Uncomment these settings:
+# cpu_speed_menu=800
+# cpu_speed_normal=1000
+# display_vsync=1
+# audio_latency=64
+# thread_video=0
+# debug=1
+# show_fps=1
+
+# ============================================================================
+# GRAPHICS SETTINGS
+# ============================================================================
+
+# Graphics backend selection
+# Options: auto, sdl2, fbdev, hardware
+# - auto: uses hardware MI_GFX acceleration (recommended)
+# - hardware: explicitly use MI_GFX (same as auto for this platform)
+# - fbdev: software framebuffer (fallback, requires USE_FBDEV_BACKEND=1)
+# - sdl2: SDL2 software rendering (not recommended for this platform)
+# Default: auto (hardware acceleration)
+#graphics_backend=auto
+
+# Display scaling mode
+# Options: aspect, fullscreen, integer, native
+# - aspect: maintain aspect ratio with borders (recommended)
+# - fullscreen: stretch to fill screen
+# - integer: use integer scaling (crisp pixels, may have borders)
+# - native: no scaling (for games matching display resolution)
+# Default: aspect
+#display_scale=aspect
+
+# Screen sharpness
+# Range: 0-10 (0=softest, 10=sharpest)
+# Higher values emphasize pixels, lower values smooth them
+# Default: 5
+#display_sharpness=soft
+
+# Vsync (vertical synchronization)
+# 0=off (may tear), 1=on (smooth rendering)
+# Recommended: 1 for Miyoo Mini (eliminates tearing)
+# Default: 1
+#display_vsync=1
+
+# ============================================================================
+# AUDIO SETTINGS
+# ============================================================================
+
+# Audio buffer latency
+# Range: 16-256 milliseconds
+# - Lower: less audio delay, higher CPU usage, potential crackling
+# - Higher: more audio delay, lower CPU usage, smoother audio
+# Recommended: 64-96 for Miyoo Mini
+# Default: 64
+#audio_latency=64
+
+# Audio sample rate
+# Options: 44100, 48000
+# Most cores use 44100 Hz, some prefer 48000 Hz
+# Default: 44100
+#audio_sample_rate=44100
+
+# ============================================================================
+# EMULATION SETTINGS
+# ============================================================================
+
+# Save state slots
+# Range: 1-10
+# Number of save state slots per game
+# Default: 4
+#savestate_slots=4
+
+# Frame skip
+# 0=no skip (best quality), 1=skip 1 frame, 2=skip 2 frames, etc.
+# Use frame skip for demanding cores to maintain speed
+# Default: 0
+#frame_skip=0
+
+# Rewind support
+# 0=disabled, 1=enabled
+# Allows rewinding gameplay (uses significant RAM - careful on 64MB Mini)
+# Default: 0
+#rewind_enabled=0
+
+# Rewind buffer seconds
+# Range: 5-60 seconds
+# More seconds = more RAM usage
+# Default: 10
+#rewind_seconds=10
+
+# Fast-forward speed
+# Range: 1-10x normal speed
+# Multiplier for fast-forward function
+# Default: 2
+#fast_forward_speed=2
+
+# ============================================================================
+# PERFORMANCE SETTINGS
+# ============================================================================
+
+# Threaded video rendering
+# 0=single-threaded (stable), 1=multi-threaded (experimental)
+# REQUIRES: Building with USE_FRAME_QUEUE=1
+# May improve performance on dual-core Cortex-A7, but experimental
+# Default: 0
+#thread_video=0
+
+# CPU speed overrides (MHz)
+# These override default CPU governors
+# Miyoo Mini supports: 600-1200 MHz
+# Higher speeds = better performance but worse battery life
+# cpu_speed_menu: Menu navigation speed
+# cpu_speed_powersave: When battery is low
+# cpu_speed_normal: Normal gameplay
+# cpu_speed_performance: Demanding cores
+# Default: varies by governor
+#cpu_speed_menu=800
+#cpu_speed_powersave=800
+#cpu_speed_normal=1000
+#cpu_speed_performance=1200
+
+# ============================================================================
+# PATH SETTINGS
+# ============================================================================
+
+# ROM directory
+# Absolute path to ROM files
+# Default: /mnt/SDCARD/Roms
+#rom_path=/mnt/SDCARD/Roms
+
+# BIOS directory
+# Absolute path to BIOS files
+# Default: /mnt/SDCARD/.userdata/bios
+#bios_path=/mnt/SDCARD/.userdata/bios
+
+# Save file directory
+# Absolute path to save files (.sav, .srm)
+# Default: /mnt/SDCARD/.userdata/saves
+#saves_path=/mnt/SDCARD/.userdata/saves
+
+# Absolute path to screenshots
+# Default: /mnt/SDCARD/.userdata/screenshots
+
+# ============================================================================
+# USER INTERFACE SETTINGS
+# ============================================================================
+
+# Show FPS counter
+# 0=hidden, 1=visible
+# Displays frames per second in corner
+# Default: 0
+#show_fps=0
+
+# Show battery indicator
+# 0=hidden, 1=visible
+# Displays battery status
+# Default: 1
+#show_battery=1
+
+# Menu timeout
+# Range: 0-300 seconds
+# Auto-exit menu after inactivity (0=disabled)
+# Default: 30
+#menu_timeout=30
+
+# ============================================================================
+# DEBUG SETTINGS
+# ============================================================================
+
+# Debug logging
+# 0=errors only, 1=info, 2=verbose
+# Higher levels log more information to console/file
+# Default: 0
+#debug=0
+
+# Log file path
+# Absolute path to log file (empty=console only)
+# Default: (none - logs to console)
+#log_file=/mnt/SDCARD/.userdata/minui.log
+
+# ============================================================================
+# MIYOO MINI SPECIFIC NOTES
+# ============================================================================
+#
+# Hardware Acceleration:
+# - Miyoo Mini uses MStar MI_GFX for hardware-accelerated blitting
+# - This is significantly faster than software rendering
+# - Keep graphics_backend=auto to use hardware acceleration
+# - The graphics backend abstraction is optional (USE_GFX_BACKEND=0 by default)
+#
+# Memory Limitations (Mini 64MB):
+# - Be conservative with rewind (uses significant RAM)
+# - Use frame skip for demanding cores (PSX, N64 ports if available)
+# - Lower savestate_slots if running into memory issues
+#
+# Memory Headroom (Plus 128MB):
+# - More comfortable with rewind enabled
+# - Can handle larger save state buffers
+# - Better suited for demanding cores
+#
+# 560p Mode (Plus only):
+# - If you have enabled 560p mode, scaling may differ
+# - Consider using integer scaling for crisp pixels
+# - Test display_scale settings for your preference
+#
+# Audio Latency:
+# - If you hear crackling, increase audio_latency to 96 or 128
+# - If input feels sluggish, decrease audio_latency to 48 or 32
+# - Sweet spot is usually 64ms for most cores
+#
+# CPU Speeds:
+# - Stock firmware manages CPU scaling automatically
+# - Override only if you need consistent performance
+# - Lower speeds improve battery life significantly
+# - 1200 MHz is maximum safe speed
+#
+# Thread Video (Experimental):
+# - Requires building with USE_FRAME_QUEUE=1
+# - May help with demanding cores on dual-core CPU
+# - Test thoroughly before enabling permanently
+# - Start with thread_video=0 until you need it
+#
+# GFX Environment Variables:
+# - Miyoo Mini respects GFX_FLIPWAIT and GFX_BLOCKING for vsync control
+# - The config system's display_vsync setting manages these automatically
+# - Manual putenv() calls in platform code are preserved for compatibility
+#
+# Testing New Features:
+# - Start with USE_CONFIG_SYSTEM=1 only (safest)
+# - Test configuration loading and settings changes
+# - Enable USE_FRAME_QUEUE=1 only if you need threaded rendering
+# - Keep USE_GFX_BACKEND=0 to preserve hardware acceleration
+#
+# Build Examples:
+#   make PLATFORM=miyoomini USE_CONFIG_SYSTEM=1                    # Config only
+#   make PLATFORM=miyoomini USE_CONFIG_SYSTEM=1 USE_FRAME_QUEUE=1 # With threading
+#   make PLATFORM=miyoomini DEBUG_PHASE2=1                        # Debug logging
+#   make PLATFORM=miyoomini                                       # Stock build
+
+# ============================================================================
+# END OF CONFIGURATION
+# ============================================================================
