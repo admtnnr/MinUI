@@ -1,12 +1,14 @@
 name: Dev Platform Tests
 
 on:
+  # Run on push only for main/dev branches (after merge)
   push:
-    branches: [ main, dev, 'claude/*' ]
+    branches: [ main, dev ]
     paths:
       - 'workspace/dev/**'
       - 'workspace/all/**'
       - '.github/workflows/test-dev-platform.yml'
+  # Run on all pull requests targeting main/dev (includes claude/* branches)
   pull_request:
     branches: [ main, dev ]
     paths:
