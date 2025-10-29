@@ -93,15 +93,65 @@ export CROSS_COMPILE=" " && make PLATFORM=dev
 export CROSS_COMPILE=" " && make PLATFORM=dev
 ```
 
+## Phase 3.3 - Joystick/Gamepad Support (COMPLETE)
+
+### Features Implemented
+
+- ✅ SDL Game Controller API integration
+- ✅ Automatic gamepad detection and enumeration
+- ✅ Standard button mapping (Xbox/PlayStation/Switch layout)
+- ✅ Analog stick support (left stick as D-pad)
+- ✅ Analog trigger support (L2/R2)
+- ✅ Hotplug support (connect/disconnect during runtime)
+- ✅ Fallback to SDL Joystick API for unknown controllers
+- ✅ Keyboard + gamepad simultaneous input
+
+### Controller Support
+
+**Tested Controllers:**
+- Xbox Controllers (360, One, Series X/S)
+- PlayStation Controllers (DualShock 4, DualSense)
+- Nintendo Switch Pro Controller
+- Generic USB/Bluetooth gamepads
+
+**Button Mapping (Xbox layout):**
+- D-pad → D-pad
+- A (bottom) → B button
+- B (right) → A button
+- X (left) → Y button
+- Y (top) → X button
+- LB/RB → L1/R1
+- LT/RT → L2/R2 (analog triggers, >50% = pressed)
+- L3/R3 → L3/R3 (stick clicks)
+- Back/Select → Select
+- Start → Start
+- Guide/Home → Menu
+
+**Analog Sticks:**
+- Left stick → D-pad navigation (50% deadzone)
+- Right stick → Not mapped (reserved for future use)
+
+### Using Gamepad
+
+1. Connect your controller before or after starting
+2. The platform auto-detects and configures it
+3. Hotplug supported - connect/disconnect anytime
+4. Keyboard always works as fallback
+
+**Console output:**
+```
+dev platform: Found 1 joystick(s)
+dev platform: Opened gamepad: Xbox Series X Controller
+```
+
 ### Known Limitations
 
-- No joystick/gamepad support yet (Phase 3.3)
 - Button repeat logic not implemented
 - Scalers return NULL (SDL handles scaling)
+- Right analog stick not mapped yet
 
 ### Next Steps (Future Phases)
 
-- **Phase 3.3**: Joystick/gamepad support
 - **Phase 3.4**: Testing tools (automation, screenshot capture)
 - **Phase 3.5**: Core emulator support
 

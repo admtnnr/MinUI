@@ -38,26 +38,117 @@ static platform_config_t platform_config;
 static int window_width = FIXED_WIDTH;
 static int window_height = FIXED_HEIGHT;
 
+// Joystick/Gamepad state
+static SDL_GameController* gamepad = NULL;
+static SDL_Joystick* joystick = NULL;
+static int joystick_id = -1;
+
 ///////////////////////////////
 // Input
 
+static void openGamepad(int device_index) {
+	// Close existing gamepad if any
+	if (gamepad) {
+		SDL_GameControllerClose(gamepad);
+		gamepad = NULL;
+	}
+	if (joystick) {
+		SDL_JoystickClose(joystick);
+		joystick = NULL;
+	}
+
+	// Try to open as game controller first (preferred, has standard mapping)
+	if (SDL_IsGameController(device_index)) {
+		gamepad = SDL_GameControllerOpen(device_index);
+		if (gamepad) {
+			joystick = SDL_GameControllerGetJoystick(gamepad);
+			joystick_id = SDL_JoystickInstanceID(joystick);
+			LOG_info("dev platform: Opened gamepad: %s\n",
+				SDL_GameControllerName(gamepad));
+			return;
+		}
+	}
+
+	// Fall back to joystick API
+	joystick = SDL_JoystickOpen(device_index);
+	if (joystick) {
+		joystick_id = SDL_JoystickInstanceID(joystick);
+		LOG_info("dev platform: Opened joystick: %s (%d axes, %d buttons)\n",
+			SDL_JoystickName(joystick),
+			SDL_JoystickNumAxes(joystick),
+			SDL_JoystickNumButtons(joystick));
+	}
+}
+
 void PLAT_initInput(void) {
-	// SDL input is initialized with SDL_Init
+	// Enumerate and open the first available controller
+	int num_joysticks = SDL_NumJoysticks();
+
+	if (num_joysticks > 0) {
+		LOG_info("dev platform: Found %d joystick(s)\n", num_joysticks);
+		openGamepad(0); // Open first controller
+	} else {
+		LOG_info("dev platform: No joysticks detected, using keyboard only\n");
+	}
 }
 
 void PLAT_quitInput(void) {
-	// SDL input is cleaned up with SDL_Quit
+	if (gamepad) {
+		SDL_GameControllerClose(gamepad);
+		gamepad = NULL;
+	}
+	if (joystick && !gamepad) {
+		// Only close if not part of gamepad
+		SDL_JoystickClose(joystick);
+	}
+	joystick = NULL;
+	joystick_id = -1;
 }
 
 void PLAT_pollInput(void) {
 	SDL_Event event;
 	const Uint8* keys = SDL_GetKeyboardState(NULL);
 
-	// Process events (needed for window management)
+	// Process events (window management, hotplug, gamepad events)
 	while (SDL_PollEvent(&event)) {
-		if (event.type == SDL_QUIT) {
-			// User closed the window
-			exit(0);
+		switch (event.type) {
+			case SDL_QUIT:
+				exit(0);
+				break;
+
+			// Hotplug support
+			case SDL_CONTROLLERDEVICEADDED:
+				if (!gamepad && !joystick) {
+					LOG_info("dev platform: Controller connected\n");
+					openGamepad(event.cdevice.which);
+				}
+				break;
+
+			case SDL_CONTROLLERDEVICEREMOVED:
+				if (gamepad && event.cdevice.which == joystick_id) {
+					LOG_info("dev platform: Controller disconnected\n");
+					SDL_GameControllerClose(gamepad);
+					gamepad = NULL;
+					joystick = NULL;
+					joystick_id = -1;
+				}
+				break;
+
+			case SDL_JOYDEVICEADDED:
+				if (!gamepad && !joystick) {
+					LOG_info("dev platform: Joystick connected\n");
+					openGamepad(event.jdevice.which);
+				}
+				break;
+
+			case SDL_JOYDEVICEREMOVED:
+				if (joystick && !gamepad && event.jdevice.which == joystick_id) {
+					LOG_info("dev platform: Joystick disconnected\n");
+					SDL_JoystickClose(joystick);
+					joystick = NULL;
+					joystick_id = -1;
+				}
+				break;
 		}
 	}
 
@@ -66,22 +157,20 @@ void PLAT_pollInput(void) {
 	pad.just_released = BTN_NONE;
 	pad.just_repeated = BTN_NONE;
 
-	// Build current button state from keyboard
+	// Build current button state
 	int now_pressed = 0;
 
-	// D-pad
+	// Keyboard input (always available)
 	if (keys[SDL_SCANCODE_UP]) 		now_pressed |= BTN_UP;
 	if (keys[SDL_SCANCODE_DOWN]) 	now_pressed |= BTN_DOWN;
 	if (keys[SDL_SCANCODE_LEFT]) 	now_pressed |= BTN_LEFT;
 	if (keys[SDL_SCANCODE_RIGHT]) 	now_pressed |= BTN_RIGHT;
 
-	// Face buttons
 	if (keys[SDL_SCANCODE_X]) 		now_pressed |= BTN_A;
 	if (keys[SDL_SCANCODE_Z]) 		now_pressed |= BTN_B;
 	if (keys[SDL_SCANCODE_S]) 		now_pressed |= BTN_X;
 	if (keys[SDL_SCANCODE_A]) 		now_pressed |= BTN_Y;
 
-	// Shoulder buttons
 	if (keys[SDL_SCANCODE_Q]) 		now_pressed |= BTN_L1;
 	if (keys[SDL_SCANCODE_W]) 		now_pressed |= BTN_R1;
 	if (keys[SDL_SCANCODE_E]) 		now_pressed |= BTN_L2;
@@ -89,7 +178,6 @@ void PLAT_pollInput(void) {
 	if (keys[SDL_SCANCODE_T]) 		now_pressed |= BTN_L3;
 	if (keys[SDL_SCANCODE_Y]) 		now_pressed |= BTN_R3;
 
-	// System buttons
 	if (keys[SDL_SCANCODE_RSHIFT]) 	now_pressed |= BTN_SELECT;
 	if (keys[SDL_SCANCODE_RETURN]) 	now_pressed |= BTN_START;
 	if (keys[SDL_SCANCODE_ESCAPE]) 	now_pressed |= BTN_MENU;
@@ -97,15 +185,111 @@ void PLAT_pollInput(void) {
 	if (keys[SDL_SCANCODE_EQUALS]) 	now_pressed |= BTN_PLUS;
 	if (keys[SDL_SCANCODE_MINUS]) 	now_pressed |= BTN_MINUS;
 
+	// Gamepad input (if connected)
+	if (gamepad) {
+		// D-pad
+		if (SDL_GameControllerGetButton(gamepad, SDL_CONTROLLER_BUTTON_DPAD_UP))
+			now_pressed |= BTN_UP;
+		if (SDL_GameControllerGetButton(gamepad, SDL_CONTROLLER_BUTTON_DPAD_DOWN))
+			now_pressed |= BTN_DOWN;
+		if (SDL_GameControllerGetButton(gamepad, SDL_CONTROLLER_BUTTON_DPAD_LEFT))
+			now_pressed |= BTN_LEFT;
+		if (SDL_GameControllerGetButton(gamepad, SDL_CONTROLLER_BUTTON_DPAD_RIGHT))
+			now_pressed |= BTN_RIGHT;
+
+		// Face buttons (using Xbox layout: A=bottom, B=right, X=left, Y=top)
+		if (SDL_GameControllerGetButton(gamepad, SDL_CONTROLLER_BUTTON_A))
+			now_pressed |= BTN_B;  // Xbox A -> MinUI B
+		if (SDL_GameControllerGetButton(gamepad, SDL_CONTROLLER_BUTTON_B))
+			now_pressed |= BTN_A;  // Xbox B -> MinUI A
+		if (SDL_GameControllerGetButton(gamepad, SDL_CONTROLLER_BUTTON_X))
+			now_pressed |= BTN_Y;  // Xbox X -> MinUI Y
+		if (SDL_GameControllerGetButton(gamepad, SDL_CONTROLLER_BUTTON_Y))
+			now_pressed |= BTN_X;  // Xbox Y -> MinUI X
+
+		// Shoulder buttons
+		if (SDL_GameControllerGetButton(gamepad, SDL_CONTROLLER_BUTTON_LEFTSHOULDER))
+			now_pressed |= BTN_L1;
+		if (SDL_GameControllerGetButton(gamepad, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER))
+			now_pressed |= BTN_R1;
+
+		// Triggers (analog treated as digital)
+		Sint16 l2 = SDL_GameControllerGetAxis(gamepad, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
+		Sint16 r2 = SDL_GameControllerGetAxis(gamepad, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
+		if (l2 > 16384) now_pressed |= BTN_L2;  // > 50% pressed
+		if (r2 > 16384) now_pressed |= BTN_R2;
+
+		// Stick buttons
+		if (SDL_GameControllerGetButton(gamepad, SDL_CONTROLLER_BUTTON_LEFTSTICK))
+			now_pressed |= BTN_L3;
+		if (SDL_GameControllerGetButton(gamepad, SDL_CONTROLLER_BUTTON_RIGHTSTICK))
+			now_pressed |= BTN_R3;
+
+		// System buttons
+		if (SDL_GameControllerGetButton(gamepad, SDL_CONTROLLER_BUTTON_BACK))
+			now_pressed |= BTN_SELECT;
+		if (SDL_GameControllerGetButton(gamepad, SDL_CONTROLLER_BUTTON_START))
+			now_pressed |= BTN_START;
+		if (SDL_GameControllerGetButton(gamepad, SDL_CONTROLLER_BUTTON_GUIDE))
+			now_pressed |= BTN_MENU;
+
+		// Analog sticks as D-pad (left stick)
+		Sint16 lx = SDL_GameControllerGetAxis(gamepad, SDL_CONTROLLER_AXIS_LEFTX);
+		Sint16 ly = SDL_GameControllerGetAxis(gamepad, SDL_CONTROLLER_AXIS_LEFTY);
+		const int deadzone = 16384; // ~50% deadzone
+
+		if (lx < -deadzone) now_pressed |= BTN_LEFT;
+		if (lx > deadzone)  now_pressed |= BTN_RIGHT;
+		if (ly < -deadzone) now_pressed |= BTN_UP;
+		if (ly > deadzone)  now_pressed |= BTN_DOWN;
+	}
+	// Joystick input (fallback if not a gamepad)
+	else if (joystick) {
+		int num_buttons = SDL_JoystickNumButtons(joystick);
+		int num_axes = SDL_JoystickNumAxes(joystick);
+
+		// Map first 12 buttons to standard layout
+		if (num_buttons > 0 && SDL_JoystickGetButton(joystick, 0)) now_pressed |= BTN_B;
+		if (num_buttons > 1 && SDL_JoystickGetButton(joystick, 1)) now_pressed |= BTN_A;
+		if (num_buttons > 2 && SDL_JoystickGetButton(joystick, 2)) now_pressed |= BTN_Y;
+		if (num_buttons > 3 && SDL_JoystickGetButton(joystick, 3)) now_pressed |= BTN_X;
+		if (num_buttons > 4 && SDL_JoystickGetButton(joystick, 4)) now_pressed |= BTN_L1;
+		if (num_buttons > 5 && SDL_JoystickGetButton(joystick, 5)) now_pressed |= BTN_R1;
+		if (num_buttons > 6 && SDL_JoystickGetButton(joystick, 6)) now_pressed |= BTN_L2;
+		if (num_buttons > 7 && SDL_JoystickGetButton(joystick, 7)) now_pressed |= BTN_R2;
+		if (num_buttons > 8 && SDL_JoystickGetButton(joystick, 8)) now_pressed |= BTN_SELECT;
+		if (num_buttons > 9 && SDL_JoystickGetButton(joystick, 9)) now_pressed |= BTN_START;
+		if (num_buttons > 10 && SDL_JoystickGetButton(joystick, 10)) now_pressed |= BTN_L3;
+		if (num_buttons > 11 && SDL_JoystickGetButton(joystick, 11)) now_pressed |= BTN_R3;
+
+		// First two axes as analog stick
+		if (num_axes >= 2) {
+			Sint16 ax0 = SDL_JoystickGetAxis(joystick, 0);
+			Sint16 ax1 = SDL_JoystickGetAxis(joystick, 1);
+			const int deadzone = 16384;
+
+			if (ax0 < -deadzone) now_pressed |= BTN_LEFT;
+			if (ax0 > deadzone)  now_pressed |= BTN_RIGHT;
+			if (ax1 < -deadzone) now_pressed |= BTN_UP;
+			if (ax1 > deadzone)  now_pressed |= BTN_DOWN;
+		}
+
+		// D-pad via hat (if available)
+		if (SDL_JoystickNumHats(joystick) > 0) {
+			Uint8 hat = SDL_JoystickGetHat(joystick, 0);
+			if (hat & SDL_HAT_UP)    now_pressed |= BTN_UP;
+			if (hat & SDL_HAT_DOWN)  now_pressed |= BTN_DOWN;
+			if (hat & SDL_HAT_LEFT)  now_pressed |= BTN_LEFT;
+			if (hat & SDL_HAT_RIGHT) now_pressed |= BTN_RIGHT;
+		}
+	}
+
 	// Calculate just_pressed and just_released
-	pad.just_pressed = now_pressed & ~pad.is_pressed;  // Buttons that are now pressed but weren't before
-	pad.just_released = ~now_pressed & pad.is_pressed; // Buttons that were pressed but aren't now
+	pad.just_pressed = now_pressed & ~pad.is_pressed;
+	pad.just_released = ~now_pressed & pad.is_pressed;
 
 	// Update current state
 	pad.is_pressed = now_pressed;
-
-	// TODO Phase 3.3: Add joystick/gamepad support
-	// TODO: Handle button repeat logic
 }
 
 int PLAT_shouldWake(void) {
@@ -135,11 +319,15 @@ SDL_Surface* PLAT_initVideo(void) {
 	}
 #endif
 
-	// Initialize SDL
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) < 0) {
+	// Initialize SDL with joystick support
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) < 0) {
 		LOG_error("SDL_Init failed: %s\n", SDL_GetError());
 		exit(1);
 	}
+
+	// Enable joystick event processing
+	SDL_JoystickEventState(SDL_ENABLE);
+	SDL_GameControllerEventState(SDL_ENABLE);
 
 	// Create window with profile-specific title
 	char window_title[256];
