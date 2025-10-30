@@ -33,23 +33,19 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Determine SCREEN setting
+# Priority: CLI flag > environment variable > makefile.env > default
 if [ -z "$SCREEN" ]; then
-  # Try to get from environment
-  if [ -n "$SCREEN" ]; then
-    SCREEN="$SCREEN"
-  else
-    # Try to parse from workspace/dev/platform/makefile.env
-    for makefile_path in /work/src/workspace/dev/platform/makefile.env /work/src/workspace/platform/dev/makefile.env; do
-      if [ -f "$makefile_path" ]; then
-        # Look for SCREEN, SCREEN_SIZE, or SCREEN_GEOMETRY
-        SCREEN_VAL=$(grep -E "^(SCREEN|SCREEN_SIZE|SCREEN_GEOMETRY)\s*=" "$makefile_path" | head -1 | cut -d= -f2 | tr -d ' ')
-        if [ -n "$SCREEN_VAL" ]; then
-          SCREEN="$SCREEN_VAL"
-          break
-        fi
+  # Try to parse from workspace/dev/platform/makefile.env
+  for makefile_path in /work/src/workspace/dev/platform/makefile.env /work/src/workspace/platform/dev/makefile.env; do
+    if [ -f "$makefile_path" ]; then
+      # Look for SCREEN, SCREEN_SIZE, or SCREEN_GEOMETRY
+      SCREEN_VAL=$(grep -E "^(SCREEN|SCREEN_SIZE|SCREEN_GEOMETRY)\s*=" "$makefile_path" | head -1 | cut -d= -f2 | tr -d ' ')
+      if [ -n "$SCREEN_VAL" ]; then
+        SCREEN="$SCREEN_VAL"
+        break
       fi
-    done
-  fi
+    fi
+  done
 fi
 
 # Default screen if not found
