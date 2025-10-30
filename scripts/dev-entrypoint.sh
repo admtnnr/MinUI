@@ -4,7 +4,7 @@
 
 set -e
 
-# Default values
+# Default values (24-bit is standard for Xvfb, even though platform uses 32-bit RGBA)
 SCREEN_SIZE="${SCREEN:-640x480x24}"
 RUN_MINUI="${RUN_MINUI:-false}"
 RECORD="${RECORD:-false}"
@@ -70,10 +70,11 @@ detect_screen_size() {
     if [ -f "workspace/dev/platform/platform.h" ]; then
         local width=$(grep -E "^#define\s+FIXED_WIDTH" workspace/dev/platform/platform.h | awk '{print $3}')
         local height=$(grep -E "^#define\s+FIXED_HEIGHT" workspace/dev/platform/platform.h | awk '{print $3}')
-        local bpp=$(grep -E "^#define\s+FIXED_DEPTH" workspace/dev/platform/platform.h | awk '{print $3}')
+        local bpp=$(grep -E "^#define\s+FIXED_BPP" workspace/dev/platform/platform.h | awk '{print $3}')
         
         if [ -n "$width" ] && [ -n "$height" ] && [ -n "$bpp" ]; then
-            detected="${width}x${height}x${bpp}"
+            # Use 24-bit depth for Xvfb (standard), even though platform uses 32-bit RGBA
+            detected="${width}x${height}x24"
         fi
     fi
     

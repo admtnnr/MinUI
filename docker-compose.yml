@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Builder service - compiles MinUI and dependencies into shared volume
   builder:
