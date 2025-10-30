@@ -49,6 +49,20 @@ jobs:
         ls -lh workspace/all/minarch/build/dev/minarch.elf
         echo "Build successful!"
 
+    - name: Build cores
+      run: |
+        cd workspace/dev/cores
+        export PLATFORM=dev
+        make gambatte
+        ls -lh output/gambatte_libretro.so
+        echo "Core build successful!"
+
+    - name: Run unit tests
+      run: |
+        cd workspace/dev/tests
+        make clean
+        make run
+
     - name: Run automated tests
       run: |
         # Start Xvfb for headless display
