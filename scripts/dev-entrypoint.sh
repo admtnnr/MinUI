@@ -43,16 +43,14 @@ done
 # Priority order: CLI --screen flag > SCREEN env var > makefile.env > default
 if [ -z "$SCREEN" ]; then
   # Try to parse from workspace/dev/platform/makefile.env
-  for makefile_path in /work/src/workspace/dev/platform/makefile.env /work/src/workspace/platform/dev/makefile.env; do
-    if [ -f "$makefile_path" ]; then
-      # Look for SCREEN, SCREEN_SIZE, or SCREEN_GEOMETRY
-      SCREEN_VAL=$(grep -E "^(SCREEN|SCREEN_SIZE|SCREEN_GEOMETRY)\s*=" "$makefile_path" | head -1 | cut -d= -f2 | tr -d ' ')
-      if [ -n "$SCREEN_VAL" ]; then
-        SCREEN="$SCREEN_VAL"
-        break
-      fi
+  makefile_path="/work/src/workspace/dev/platform/makefile.env"
+  if [ -f "$makefile_path" ]; then
+    # Look for SCREEN, SCREEN_SIZE, or SCREEN_GEOMETRY
+    SCREEN_VAL=$(grep -E "^(SCREEN|SCREEN_SIZE|SCREEN_GEOMETRY)\s*=" "$makefile_path" | head -1 | cut -d= -f2 | tr -d ' ')
+    if [ -n "$SCREEN_VAL" ]; then
+      SCREEN="$SCREEN_VAL"
     fi
-  done
+  fi
 fi
 
 # Default screen if not found
@@ -127,22 +125,51 @@ if [ "$RUN_MINUI" = "true" ]; then
   echo "MinUI exited with code: $EXIT_CODE"
   
 elif [ "$RUN_TESTS" = "true" ] || [ -z "$RUN_MINUI" ]; then
-  # Default: Run test runner
-  TEST_CONFIG="${TEST_CONFIG:-/work/src/workspace/dev/tests/test_basic_navigation.json}"
+  # Default: Start MinUI and run test runner
+  MINUI_BIN="${MINUI_BIN:-/work/build/SYSTEM/dev/bin/minui.elf}"
   TEST_RUNNER="/work/src/workspace/dev/tools/run_tests.py"
+  
+  if [ ! -f "$MINUI_BIN" ]; then
+    echo "ERROR: MinUI binary not found at: $MINUI_BIN"
+    echo "Please build MinUI first or set MINUI_BIN environment variable"
+    exit 1
+  fi
   
   if [ ! -f "$TEST_RUNNER" ]; then
     echo "ERROR: Test runner not found at: $TEST_RUNNER"
     exit 1
   fi
   
-  echo "Running test runner..."
-  echo "Test config: $TEST_CONFIG"
+  # Start MinUI in the background
+  echo "Starting MinUI: $MINUI_BIN"
+  "$MINUI_BIN" &
+  MINUI_PID=$!
   
-  cd /work/src/workspace/dev/tools
-  /home/dev/venv/bin/python3 run_tests.py --tests /work/src/workspace/dev/tests --output /work/build/test_output --headless || true
-  EXIT_CODE=$?
-  echo "Test runner exited with code: $EXIT_CODE"
+  # Wait for MinUI to initialize
+  echo "Waiting for MinUI to initialize..."
+  sleep 3
+  
+  # Check if MinUI is still running
+  if ! kill -0 $MINUI_PID 2>/dev/null; then
+    echo "ERROR: MinUI failed to start"
+    wait $MINUI_PID
+    EXIT_CODE=$?
+    echo "MinUI exited with code: $EXIT_CODE"
+  else
+    echo "MinUI started successfully"
+    
+    # Run test runner
+    echo "Running test runner..."
+    cd /work/src/workspace/dev/tools
+    /home/dev/venv/bin/python3 run_tests.py --tests /work/src/workspace/dev/tests --output /work/build/test_output --headless || true
+    EXIT_CODE=$?
+    echo "Test runner exited with code: $EXIT_CODE"
+    
+    # Stop MinUI
+    echo "Stopping MinUI..."
+    kill $MINUI_PID 2>/dev/null || true
+    wait $MINUI_PID 2>/dev/null || true
+  fi
 fi
 
 echo "=================================================="

@@ -14,7 +14,7 @@ services:
   runner:
     build: .
     platform: linux/arm64
-    command: /usr/local/bin/dev-entrypoint.sh --run-tests
+    command: --run-tests
     volumes:
       - minui_build:/work/build
       - ./:/work/src:cached
