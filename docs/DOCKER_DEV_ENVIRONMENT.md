@@ -2,6 +2,8 @@
 
 This containerized development environment provides a complete setup for running MinUI tests visually and debugging MinUI on macOS (M1/ARM64) and other platforms.
 
+> **New to Docker development?** Start with the [Quick Start Guide](DOCKER_QUICK_START.md)!
+
 ## Features
 
 - **Visual Testing**: Xvfb with VNC access to watch test runs in real-time
