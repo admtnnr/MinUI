@@ -1,0 +1,5 @@
+# Python dependencies for MinUI Docker development environment
+# Used by test runner and visual comparison tools
+
+# Image processing for visual regression testing
+Pillow>=10.0.0

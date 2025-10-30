@@ -16,11 +16,12 @@ from datetime import datetime
 
 
 class TestRunner:
-    def __init__(self, minui_binary, test_dir, output_dir, headless=False):
+    def __init__(self, minui_binary, test_dir, output_dir, headless=False, minui_pid=None):
         self.minui_binary = Path(minui_binary)
         self.test_dir = Path(test_dir)
         self.output_dir = Path(output_dir)
         self.headless = headless
+        self.minui_pid = minui_pid  # PID of already-running MinUI instance
         self.minui_process = None
         self.results = []
 
@@ -221,9 +222,21 @@ class TestRunner:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         (self.output_dir / 'screenshots').mkdir(exist_ok=True)
 
-        # Start MinUI
-        if not self.start_minui():
-            return False
+        # Start MinUI only if not already running
+        started_minui = False
+        if self.minui_pid is None:
+            if not self.start_minui():
+                return False
+            started_minui = True
+        else:
+            print(f"Using already-running MinUI (PID: {self.minui_pid})")
+            # Verify it's still running
+            try:
+                os.kill(int(self.minui_pid), 0)
+                print("MinUI process verified running")
+            except (OSError, ValueError):
+                print(f"ERROR: MinUI process {self.minui_pid} is not running")
+                return False
 
         try:
             # Run tests
@@ -242,7 +255,9 @@ class TestRunner:
             return failed == 0
 
         finally:
-            self.stop_minui()
+            # Only stop MinUI if we started it
+            if started_minui:
+                self.stop_minui()
 
     def _generate_report(self, passed, failed):
         """Generate test report"""
@@ -338,6 +353,8 @@ def main():
     parser = argparse.ArgumentParser(description='MinUI Test Suite Runner')
     parser.add_argument('--minui', type=str, default='../all/minui/build/dev/minui.elf',
                        help='Path to minui binary')
+    parser.add_argument('--minui-pid', type=int, default=None,
+                       help='PID of already-running MinUI instance (skips MinUI startup)')
     parser.add_argument('--tests', type=str, default='./tests',
                        help='Directory containing test files')
     parser.add_argument('--output', type=str, default='./test_output',
@@ -351,7 +368,8 @@ def main():
         minui_binary=args.minui,
         test_dir=args.tests,
         output_dir=args.output,
-        headless=args.headless
+        headless=args.headless,
+        minui_pid=args.minui_pid
     )
 
     try:
@@ -359,7 +377,9 @@ def main():
         return 0 if success else 1
     except KeyboardInterrupt:
         print("\n\nTest run interrupted")
-        runner.stop_minui()
+        # Only stop MinUI if we started it
+        if args.minui_pid is None:
+            runner.stop_minui()
         return 130
 
 

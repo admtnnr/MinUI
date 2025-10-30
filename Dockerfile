@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM debian:bookworm-slim
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     xvfb x11vnc ffmpeg python3 python3-venv python3-pip git build-essential ca-certificates x11-utils make sudo \

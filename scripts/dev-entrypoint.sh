@@ -5,7 +5,6 @@ set -e
 # Preserve environment variables if already set
 SCREEN_ARG=""
 RECORD_ARG=""
-RUN_MINUI_ARG=""
 RUN_TESTS_ARG=""
 
 while [[ $# -gt 0 ]]; do
@@ -16,10 +15,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --record)
       RECORD_ARG="true"
-      shift
-      ;;
-    --run-minui)
-      RUN_MINUI_ARG="true"
       shift
       ;;
     --run-tests)
@@ -36,7 +31,6 @@ done
 # Apply CLI arguments if provided (overrides environment variables)
 [ -n "$SCREEN_ARG" ] && SCREEN="$SCREEN_ARG"
 [ -n "$RECORD_ARG" ] && RECORD="$RECORD_ARG"
-[ -n "$RUN_MINUI_ARG" ] && RUN_MINUI="$RUN_MINUI_ARG"
 [ -n "$RUN_TESTS_ARG" ] && RUN_TESTS="$RUN_TESTS_ARG"
 
 # Determine SCREEN setting if not already set
@@ -73,7 +67,6 @@ echo "MinUI Docker Development Environment"
 echo "=================================================="
 echo "Screen: ${WIDTH}x${HEIGHT}x${DEPTH}"
 echo "Record: ${RECORD:-false}"
-echo "Run MinUI: ${RUN_MINUI:-false}"
 echo "Run Tests: ${RUN_TESTS:-false}"
 echo "=================================================="
 
@@ -104,72 +97,56 @@ if [ "$RECORD" = "true" ] || [ -n "$RECORD_VIDEO" ]; then
   FFMPEG_PID=$!
 fi
 
-# Determine what to run
-if [ "$RUN_MINUI" = "true" ]; then
-  # Run MinUI binary
-  MINUI_BIN="${MINUI_BIN:-/work/build/SYSTEM/dev/bin/minui.elf}"
-  
-  if [ ! -f "$MINUI_BIN" ]; then
-    echo "ERROR: MinUI binary not found at: $MINUI_BIN"
-    echo "Please build MinUI first or set MINUI_BIN environment variable"
-    exit 1
-  fi
-  
-  echo "Running MinUI: $MINUI_BIN"
-  "$MINUI_BIN" &
-  MINUI_PID=$!
-  
-  # Wait for MinUI process
+# Start MinUI unconditionally
+MINUI_BIN="${MINUI_BIN:-/work/build/SYSTEM/dev/bin/minui.elf}"
+
+if [ ! -f "$MINUI_BIN" ]; then
+  echo "ERROR: MinUI binary not found at: $MINUI_BIN"
+  echo "Please build MinUI first or set MINUI_BIN environment variable"
+  exit 1
+fi
+
+echo "Starting MinUI: $MINUI_BIN"
+"$MINUI_BIN" &
+MINUI_PID=$!
+
+# Wait for MinUI to initialize
+echo "Waiting for MinUI to initialize..."
+sleep 3
+
+# Check if MinUI is still running
+if ! kill -0 $MINUI_PID 2>/dev/null; then
+  echo "ERROR: MinUI failed to start"
   wait $MINUI_PID
   EXIT_CODE=$?
   echo "MinUI exited with code: $EXIT_CODE"
-  
-elif [ "$RUN_TESTS" = "true" ] || [ -z "$RUN_MINUI" ]; then
-  # Default: Start MinUI and run test runner
-  MINUI_BIN="${MINUI_BIN:-/work/build/SYSTEM/dev/bin/minui.elf}"
+  exit $EXIT_CODE
+fi
+
+echo "MinUI started successfully (PID: $MINUI_PID)"
+
+# Run tests if requested
+if [ "$RUN_TESTS" = "true" ]; then
   TEST_RUNNER="/work/src/workspace/dev/tools/run_tests.py"
-  
-  if [ ! -f "$MINUI_BIN" ]; then
-    echo "ERROR: MinUI binary not found at: $MINUI_BIN"
-    echo "Please build MinUI first or set MINUI_BIN environment variable"
-    exit 1
-  fi
   
   if [ ! -f "$TEST_RUNNER" ]; then
     echo "ERROR: Test runner not found at: $TEST_RUNNER"
-    exit 1
-  fi
-  
-  # Start MinUI in the background
-  echo "Starting MinUI: $MINUI_BIN"
-  "$MINUI_BIN" &
-  MINUI_PID=$!
-  
-  # Wait for MinUI to initialize
-  echo "Waiting for MinUI to initialize..."
-  sleep 3
-  
-  # Check if MinUI is still running
-  if ! kill -0 $MINUI_PID 2>/dev/null; then
-    echo "ERROR: MinUI failed to start"
-    wait $MINUI_PID
-    EXIT_CODE=$?
-    echo "MinUI exited with code: $EXIT_CODE"
-  else
-    echo "MinUI started successfully"
-    
-    # Run test runner
-    echo "Running test runner..."
-    cd /work/src/workspace/dev/tools
-    /home/dev/venv/bin/python3 run_tests.py --tests /work/src/workspace/dev/tests --output /work/build/test_output --headless || true
-    EXIT_CODE=$?
-    echo "Test runner exited with code: $EXIT_CODE"
-    
-    # Stop MinUI
     echo "Stopping MinUI..."
     kill $MINUI_PID 2>/dev/null || true
     wait $MINUI_PID 2>/dev/null || true
+    exit 1
   fi
+  
+  # Run test runner - it will connect to the already-running MinUI
+  echo "Running test runner..."
+  cd /work/src/workspace/dev/tools
+  /home/dev/venv/bin/python3 run_tests.py \
+    --minui-pid $MINUI_PID \
+    --tests /work/src/workspace/dev/tests \
+    --output /work/build/test_output \
+    --headless || true
+  EXIT_CODE=$?
+  echo "Test runner exited with code: $EXIT_CODE"
 fi
 
 echo "=================================================="
