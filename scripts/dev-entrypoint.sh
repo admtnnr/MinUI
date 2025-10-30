@@ -2,27 +2,28 @@
 set -e
 
 # Parse command-line arguments
-SCREEN=""
-RECORD=""
-RUN_MINUI=""
-RUN_TESTS=""
+# Preserve environment variables if already set
+SCREEN_ARG=""
+RECORD_ARG=""
+RUN_MINUI_ARG=""
+RUN_TESTS_ARG=""
 
 while [[ $# -gt 0 ]]; do
   case $1 in
     --screen)
-      SCREEN="$2"
+      SCREEN_ARG="$2"
       shift 2
       ;;
     --record)
-      RECORD="true"
+      RECORD_ARG="true"
       shift
       ;;
     --run-minui)
-      RUN_MINUI="true"
+      RUN_MINUI_ARG="true"
       shift
       ;;
     --run-tests)
-      RUN_TESTS="true"
+      RUN_TESTS_ARG="true"
       shift
       ;;
     *)
@@ -31,6 +32,12 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+# Set values with priority: CLI args > environment variables > defaults
+[ -n "$SCREEN_ARG" ] && SCREEN="$SCREEN_ARG"
+[ -n "$RECORD_ARG" ] && RECORD="$RECORD_ARG"
+[ -n "$RUN_MINUI_ARG" ] && RUN_MINUI="$RUN_MINUI_ARG"
+[ -n "$RUN_TESTS_ARG" ] && RUN_TESTS="$RUN_TESTS_ARG"
 
 # Determine SCREEN setting
 # Priority: CLI flag > environment variable > makefile.env > default
