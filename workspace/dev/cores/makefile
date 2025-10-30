@@ -2,13 +2,36 @@
 # Builds native libretro cores for development and testing
 # Supports both x86_64 (CI) and arm64 (M1 Mac Docker)
 
-# Start with just gambatte for Phase 3.5
-CORES = gambatte
+# Phase 3.6: All supported cores
+CORES = fceumm gambatte gpsp picodrive snes9x2005_plus
+CORES+= mednafen_pce_fast mednafen_vb fake-08 mgba race
+
+# Optional: Add these manually if needed (may have build issues)
+# pokemini - Has patching issues on dev platform
+# pcsx_rearmed mednafen_supafaust
 
 ###############################
 
-# Core-specific overrides
+# Core-specific repository overrides
+mednafen_pce_fast_REPO = https://github.com/libretro/beetle-pce-fast-libretro
+mednafen_vb_REPO = https://github.com/libretro/beetle-vb-libretro
+
+fake-08_REPO = https://github.com/jtothebell/fake-08
+fake-08_CORE = fake08_libretro.so
+fake-08_BUILD_PATH = fake-08/platform/libretro
+
+fceumm_REPO = https://github.com/libretro/libretro-fceumm
+
 gambatte_REPO = https://github.com/libretro/gambatte-libretro
+
+picodrive_REPO = https://github.com/irixxxx/picodrive
+picodrive_MAKEFILE = Makefile.libretro
+
+pokemini_REPO = https://github.com/libretro/PokeMini
+pokemini_MAKEFILE = Makefile.libretro
+
+snes9x2005_plus_REPO = https://github.com/libretro/snes9x2005
+snes9x2005_plus_FLAGS = USE_BLARGG_APU=1
 
 ###############################
 

@@ -103,8 +103,31 @@ void test_core_loading(const char* core_path) {
 int main(int argc, char* argv[]) {
     printf("=== MinArch Core Loading Tests ===\n\n");
 
-    const char* core_path = argc > 1 ? argv[1] : "../cores/output/gambatte_libretro.so";
-    test_core_loading(core_path);
+    // If a core is specified, test just that one
+    if (argc > 1) {
+        test_core_loading(argv[1]);
+    }
+    // Otherwise test all cores
+    else {
+        const char* cores[] = {
+            "../cores/output/fake08_libretro.so",
+            "../cores/output/fceumm_libretro.so",
+            "../cores/output/gambatte_libretro.so",
+            "../cores/output/gpsp_libretro.so",
+            "../cores/output/mednafen_pce_fast_libretro.so",
+            "../cores/output/mednafen_vb_libretro.so",
+            "../cores/output/mgba_libretro.so",
+            "../cores/output/picodrive_libretro.so",
+            "../cores/output/race_libretro.so",
+            "../cores/output/snes9x2005_plus_libretro.so",
+            NULL
+        };
+
+        for (int i = 0; cores[i] != NULL; i++) {
+            test_core_loading(cores[i]);
+            printf("\n");
+        }
+    }
 
     printf("\n=== Test Summary ===\n");
     printf("Passed: %d\n", tests_passed);

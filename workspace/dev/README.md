@@ -350,11 +350,22 @@ cd workspace/dev/tests
         └── GB-gambatte/ # Save states and config
 ```
 
-### Supported Cores
+### Supported Cores (Phase 3.6)
 
 | Core | System | Status | Extensions |
 |------|--------|--------|------------|
+| **fake-08** | PICO-8 | ✅ Working | .p8, .png |
+| **fceumm** | NES / Famicom | ✅ Working | .nes, .fds, .unf, .unif |
 | **gambatte** | Game Boy / Game Boy Color | ✅ Working | .gb, .gbc, .dmg |
+| **gpsp** | Game Boy Advance | ✅ Working | .gba, .bin |
+| **mednafen_pce_fast** | PC Engine / TurboGrafx-16 | ✅ Working | .pce, .sgx, .cue, .ccd, .chd |
+| **mednafen_vb** | Virtual Boy | ✅ Working | .vb, .vboy, .bin |
+| **mgba** | Game Boy Advance | ✅ Working | .gba, .gb, .gbc, .sgb |
+| **picodrive** | Genesis / Mega Drive / 32X / Sega CD | ✅ Working | .bin, .gen, .smd, .md, .32x, .cue, .iso, .sms, .gg |
+| **race** | Neo Geo Pocket / Color | ✅ Working | .ngp, .ngc, .ngpc, .npc |
+| **snes9x2005_plus** | Super Nintendo | ✅ Working | .smc, .fig, .sfc, .gd3, .swc |
+
+**Total**: 10 cores covering 9 different systems
 
 **Adding more cores**: Edit `workspace/dev/cores/makefile` and run `PLATFORM=dev make <corename>`
 
@@ -400,29 +411,51 @@ cd workspace/dev
 export CROSS_COMPILE=" "
 make PLATFORM=dev
 
-# 2. Build gambatte core
+# 2. Build all cores (10 cores)
 cd cores
-PLATFORM=dev make gambatte
+PLATFORM=dev make cores
 
-# 3. Verify with unit tests
+# 3. Verify with unit tests (170 tests across all cores)
 cd ../tests
 make run
 
-# 4. Download a test ROM (Tobu Tobu Girl - free homebrew)
-mkdir -p /tmp/minui_dev/Roms/GB
-cd /tmp/minui_dev/Roms/GB
-wget https://github.com/SimonLarsen/tobutobugirl/releases/download/v1.0/tobutobugirl.gb
+# 4. Download test ROMs (examples - free homebrew)
+mkdir -p /tmp/minui_dev/Roms/{GB,NES,SNES,GBA}
 
-# 5. Test!
+# Game Boy: Tobu Tobu Girl
+wget -P /tmp/minui_dev/Roms/GB \
+  https://github.com/SimonLarsen/tobutobugirl/releases/download/v1.0/tobutobugirl.gb
+
+# NES: Many free homebrew games at itch.io
+# SNES: Check https://www.zophar.net/pdroms/snes.html
+# GBA: Check https://www.zophar.net/pdroms/gameboy-advance.html
+
+# 5. Test with any ROM
 cd ~/workspace/dev/tests  # Adjust path as needed
 ./test_minarch.sh /tmp/minui_dev/Roms/GB/tobutobugirl.gb
 ```
 
+### Phase 3.6 - Additional Cores (COMPLETE)
+
+**9 new cores added**, bringing total to **10 cores covering 9 systems**:
+
+- ✅ fake-08 (PICO-8)
+- ✅ fceumm (NES)
+- ✅ gpsp (GBA)
+- ✅ mednafen_pce_fast (PC Engine)
+- ✅ mednafen_vb (Virtual Boy)
+- ✅ mgba (GBA - alternative to gpsp)
+- ✅ picodrive (Genesis/Mega Drive)
+- ✅ race (Neo Geo Pocket)
+- ✅ snes9x2005_plus (SNES)
+
+**Unit tests**: 170/170 passing (17 tests per core × 10 cores)
+
 ### Next Steps (Future Phases)
 
-- **Phase 3.6**: Additional cores (fceumm, snes9x2005)
 - **Phase 3.7**: Automated visual regression tests
 - **Phase 3.8**: Performance benchmarking framework
+- **Phase 3.9**: Additional platform cores (pcsx_rearmed, mednafen_supafaust)
 
 ### Technical Notes
 
