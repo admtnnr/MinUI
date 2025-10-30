@@ -3,3 +3,6 @@
 
 # Image processing for visual regression testing
 Pillow>=10.0.0
+
+# X11 input simulation for input player
+python-xlib>=0.33

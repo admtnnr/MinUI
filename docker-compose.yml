@@ -4,12 +4,14 @@ services:
   builder:
     build: .
     platform: linux/arm64
-    command: /bin/sh -c "${COMPILE_CMD:-make PLATFORM=dev build}"
+    entrypoint: /bin/sh
+    command: -c "${COMPILE_CMD:-make PLATFORM=dev build}"
     volumes:
       - minui_build:/work/build
       - ./:/work/src:cached
     environment:
       - COMPILE_CMD
+    working_dir: /work/src
 
   runner:
     build: .
