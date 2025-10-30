@@ -150,9 +150,140 @@ dev platform: Opened gamepad: Xbox Series X Controller
 - Scalers return NULL (SDL handles scaling)
 - Right analog stick not mapped yet
 
+## Phase 3.4 - Testing Tools (COMPLETE)
+
+### Features Implemented
+
+- ✅ Screenshot capture (F12 key)
+- ✅ Input recording (F11 key)
+- ✅ Headless mode for CI/CD
+- ✅ Python automation tools
+- ✅ Visual regression testing
+- ✅ Test suite framework
+- ✅ CI/CD integration (GitHub Actions)
+
+### Keyboard Shortcuts
+
+**Testing Keys:**
+- **F12**: Capture screenshot → `./screenshots/screenshot_YYYYMMDD_HHMMSS.png`
+- **F11**: Start/stop input recording → `./input_recording_YYYYMMDD_HHMMSS.csv`
+
+### Testing Tools
+
+Located in `tools/` directory:
+
+1. **run_tests.py** - Automated test suite runner
+   ```bash
+   cd tools
+   ./run_tests.py
+   ./run_tests.py --headless  # For CI
+   ```
+
+2. **input_player.py** - Replay recorded input sequences
+   ```bash
+   ./input_player.py recording.csv
+   ./input_player.py recording.csv --speed 2.0
+   ```
+
+3. **compare_images.py** - Visual regression testing
+   ```bash
+   ./compare_images.py expected.png actual.png
+   ./compare_images.py expected.png actual.png --threshold 0.95 --output diff.png
+   ```
+
+See `tools/README.md` for detailed documentation.
+
+### Test Suite
+
+Located in `tests/` directory:
+- Test cases defined in JSON format
+- Example: `test_basic_navigation.json`
+- Expected screenshots in `tests/expected/`
+- Input recordings in `tests/recordings/`
+
+See `tests/README.md` for test authoring guide.
+
+### Environment Variables
+
+**MINUI_HEADLESS=1** - Run in headless mode (no window)
+```bash
+MINUI_HEADLESS=1 ./minui.elf
+```
+
+**MINUI_SCREENSHOTS_DIR** - Custom screenshots directory
+```bash
+MINUI_SCREENSHOTS_DIR=/tmp/shots ./minui.elf
+```
+
+### CI/CD Integration
+
+Automated testing runs on every push via GitHub Actions:
+- `.github/workflows/test-dev-platform.yml`
+- Runs tests in headless mode with Xvfb
+- Uploads test reports and screenshots as artifacts
+- Posts results to pull requests
+
+### Usage Examples
+
+**Manual Testing:**
+```bash
+# Build
+export CROSS_COMPILE=" " && make PLATFORM=dev
+
+# Run and test manually
+cd ../all/minui/build/dev
+./minui.elf
+
+# Press F12 to capture screenshots
+# Press F11 to record inputs
+```
+
+**Automated Testing:**
+```bash
+# Run test suite
+cd tools
+./run_tests.py
+
+# View results
+open ../test_output/test_report.html
+```
+
+**Headless Testing (CI):**
+```bash
+# Start virtual display
+Xvfb :99 -screen 0 640x480x24 &
+export DISPLAY=:99
+
+# Run tests
+MINUI_HEADLESS=1 ./run_tests.py --headless
+```
+
+### Dependencies
+
+**Runtime:**
+- SDL2
+- SDL2_image (for PNG screenshot capture)
+- SDL2_ttf
+
+**Testing Tools:**
+- Python 3.8+
+- python3-xlib (for input playback)
+- Pillow (for image comparison)
+
+**Install dependencies:**
+```bash
+# Ubuntu/Debian
+sudo apt-get install libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev \
+                     python3 python3-pip python3-xlib
+pip3 install Pillow
+
+# macOS
+brew install sdl2 sdl2_image sdl2_ttf python3
+pip3 install Pillow
+```
+
 ### Next Steps (Future Phases)
 
-- **Phase 3.4**: Testing tools (automation, screenshot capture)
 - **Phase 3.5**: Core emulator support
 
 ### Technical Notes

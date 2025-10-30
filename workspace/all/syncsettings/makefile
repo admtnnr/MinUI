@@ -14,12 +14,17 @@ endif
 
 ###########################################################
 
+include ../../$(PLATFORM)/platform/makefile.env
+
+###########################################################
+
 TARGET = syncsettings
-SOURCE = $(TARGET).c
+INCDIR = -I../common/ -I../../$(PLATFORM)/platform/
+SOURCE = $(TARGET).c ../common/utils.c ../common/api.c ../../$(PLATFORM)/platform/platform.c
 
 CC = $(CROSS_COMPILE)gcc
-CFLAGS   = $(ARCH) -DPLATFORM=\"$(PLATFORM)\"
-LDFLAGS	 = -Os -lmsettings -lrt -ldl -Wl,--gc-sections -s
+CFLAGS   = $(ARCH) -I$(PREFIX)/include $(INCDIR) -DPLATFORM=\"$(PLATFORM)\" -DUSE_SDL2
+LDFLAGS	 = -Os -L$(PREFIX)/lib -lmsettings -lrt -ldl -Wl,--gc-sections -s $(LIBS) -lm -lz -lpthread
 
 PRODUCT= build/$(PLATFORM)/$(TARGET).elf
 
@@ -30,4 +35,4 @@ clean:
 	rm -f $(PRODUCT)
 
 $(PREFIX)/include/msettings.h:
-	cd /root/workspace/$(PLATFORM)/libmsettings && make
+	cd ../../$(PLATFORM)/libmsettings && make
