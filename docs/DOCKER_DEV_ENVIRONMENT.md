@@ -100,7 +100,8 @@ Runs MinUI binary directly with VNC access for interactive debugging.
 | `SCREEN` | `640x480x24` | Screen resolution (WIDTHxHEIGHTxDEPTH) |
 | `RUN_MINUI` | `false` | Set to `true` to run MinUI instead of tests |
 | `RECORD` | `false` | Enable screen recording to MP4 |
-| `TEST_CONFIG` | `workspace/dev/tests/test_basic_navigation.json` | Test configuration file path |
+| `TEST_DIR` | `workspace/dev/tests` | Test directory path |
+| `TEST_OUTPUT` | `workspace/dev/test_output` | Test output directory path |
 | `MINUI_BIN` | `./build/SYSTEM/rg35xx/bin/minui.elf` | Path to MinUI binary |
 | `DISPLAY_NUM` | `99` | X display number |
 | `VNC_PORT` | `5900` | VNC server port |
@@ -141,10 +142,10 @@ Connect to `localhost:5900` with a VNC client to watch tests.
 docker compose run --rm -e SCREEN=800x600x24 runner
 ```
 
-### Run Specific Test Configuration
+### Run Tests from Different Directory
 
 ```bash
-docker compose run --rm -e TEST_CONFIG=workspace/dev/tests/my_test.json runner
+docker compose run --rm -e TEST_DIR=workspace/dev/tests -e TEST_OUTPUT=./test_results runner
 ```
 
 ### Debug MinUI with Recording

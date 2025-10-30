@@ -37,3 +37,7 @@ workspace/hash.txt
 workspace/readmes
 
 FAKESD
+
+# Docker dev environment artifacts
+*.mp4
+*.log

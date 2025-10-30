@@ -8,7 +8,8 @@ set -e
 SCREEN_SIZE="${SCREEN:-640x480x24}"
 RUN_MINUI="${RUN_MINUI:-false}"
 RECORD="${RECORD:-false}"
-TEST_CONFIG="${TEST_CONFIG:-workspace/dev/tests/test_basic_navigation.json}"
+TEST_DIR="${TEST_DIR:-workspace/dev/tests}"
+TEST_OUTPUT="${TEST_OUTPUT:-workspace/dev/test_output}"
 MINUI_BIN="${MINUI_BIN:-./build/SYSTEM/rg35xx/bin/minui.elf}"
 DISPLAY_NUM="${DISPLAY_NUM:-99}"
 VNC_PORT="${VNC_PORT:-5900}"
@@ -28,8 +29,12 @@ while [[ $# -gt 0 ]]; do
             RECORD="true"
             shift
             ;;
-        --config)
-            TEST_CONFIG="$2"
+        --tests)
+            TEST_DIR="$2"
+            shift 2
+            ;;
+        --output)
+            TEST_OUTPUT="$2"
             shift 2
             ;;
         --help)
@@ -41,14 +46,16 @@ while [[ $# -gt 0 ]]; do
             echo "  --screen SIZE      Screen resolution (default: 640x480x24 or from platform files)"
             echo "  --minui            Run MinUI binary instead of test runner"
             echo "  --record           Record screen to video file"
-            echo "  --config PATH      Test config path (default: workspace/dev/tests/test_basic_navigation.json)"
+            echo "  --tests DIR        Test directory (default: workspace/dev/tests)"
+            echo "  --output DIR       Test output directory (default: workspace/dev/test_output)"
             echo "  --help             Show this help message"
             echo ""
             echo "Environment Variables:"
             echo "  SCREEN             Override screen resolution"
             echo "  RUN_MINUI          Set to 'true' to run MinUI binary"
             echo "  RECORD             Set to 'true' to enable recording"
-            echo "  TEST_CONFIG        Path to test configuration"
+            echo "  TEST_DIR           Test directory path"
+            echo "  TEST_OUTPUT        Test output directory path"
             echo "  MINUI_BIN          Path to MinUI binary"
             echo "  DISPLAY_NUM        X display number (default: 99)"
             echo "  VNC_PORT           VNC server port (default: 5900)"
@@ -223,15 +230,28 @@ if [ "$RUN_MINUI" = "true" ]; then
 else
     echo ""
     echo "Starting test runner..."
-    echo "Config: $TEST_CONFIG"
     
-    # Check if test runner exists
-    if [ ! -f "workspace/dev/tools/run_tests.py" ]; then
-        echo "Error: Test runner not found at workspace/dev/tools/run_tests.py"
+    # Check for test runner (try multiple locations)
+    if [ -f "tools/test_runner.py" ]; then
+        # Future pattern: tools/test_runner.py --config tests/config.json
+        TEST_RUNNER="tools/test_runner.py"
+        echo "Test runner: $TEST_RUNNER"
+        echo "Tests: $TEST_DIR"
+        
+        exec python3 "$TEST_RUNNER" --tests "$TEST_DIR" --output "$TEST_OUTPUT"
+    elif [ -f "workspace/dev/tools/run_tests.py" ]; then
+        # Current pattern: workspace/dev/tools/run_tests.py
+        TEST_RUNNER="workspace/dev/tools/run_tests.py"
+        echo "Test runner: $TEST_RUNNER"
+        echo "Tests: $TEST_DIR"
+        echo "Output: $TEST_OUTPUT"
+        
+        exec python3 "$TEST_RUNNER" --tests "$TEST_DIR" --output "$TEST_OUTPUT"
+    else
+        echo "Error: Test runner not found"
+        echo "Tried:"
+        echo "  - tools/test_runner.py"
+        echo "  - workspace/dev/tools/run_tests.py"
         exit 1
     fi
-    
-    # Run test runner
-    cd workspace/dev/tools || exit 1
-    exec python3 run_tests.py --config "../tests/test_basic_navigation.json"
 fi

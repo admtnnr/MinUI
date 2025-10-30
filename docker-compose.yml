@@ -54,7 +54,8 @@ services:
       - RECORD=${RECORD:-false}
       
       # Test configuration
-      - TEST_CONFIG=${TEST_CONFIG:-workspace/dev/tests/test_basic_navigation.json}
+      - TEST_DIR=${TEST_DIR:-workspace/dev/tests}
+      - TEST_OUTPUT=${TEST_OUTPUT:-workspace/dev/test_output}
       
       # MinUI binary path
       - MINUI_BIN=${MINUI_BIN:-./build/SYSTEM/rg35xx/bin/minui.elf}

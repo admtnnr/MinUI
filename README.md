@@ -39,6 +39,10 @@ You can [grab the latest version here](https://github.com/shauninman/MinUI/relea
 > POWER. Once asleep the device can safely
 > be powered off manually with the switch.
 
+## Development
+
+For developers working on MinUI, a Docker-based development environment is available for visual testing and debugging. See [docs/DOCKER_DEV_ENVIRONMENT.md](docs/DOCKER_DEV_ENVIRONMENT.md) for details.
+
 ## Supported consoles
 
 Base:
