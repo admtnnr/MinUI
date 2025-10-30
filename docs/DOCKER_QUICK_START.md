@@ -120,8 +120,11 @@ echo $DISPLAY
 # List build artifacts
 ls -la build/
 
-# Run test manually
-python3 workspace/dev/tools/run_tests.py --tests workspace/dev/tests
+# Run test manually (if test runner exists)
+if [ -f workspace/dev/tools/run_tests.py ]; then
+  cd workspace/dev/tools
+  python3 run_tests.py --tests ../tests --output ../test_output
+fi
 ```
 
 ### Custom Compile Command
@@ -171,24 +174,30 @@ make docker-debug
 ### CI/CD Testing
 
 ```bash
-# Run tests headless (no VNC needed)
+# Run tests headless (no VNC client needed, but Xvfb still runs)
 docker compose run --rm runner bash -c \
-  "python3 workspace/dev/tools/run_tests.py --tests workspace/dev/tests --headless"
+  "cd workspace/dev/tools && python3 run_tests.py --tests ../tests --headless"
 ```
+
+**Note**: `--headless` mode still uses Xvfb but doesn't require interactive VNC access.
 
 ### Multi-Platform Testing
 
 ```bash
-# Build for different platform
-COMPILE_CMD="cd workspace/rg35xx && make" \
+# Build for different platform (example: rg35xx)
+# Note: May require specific toolchain setup
+COMPILE_CMD="cd workspace/dev && make" \
   docker compose --profile build run --rm builder
 
 # Run MinUI for that platform
+# Note: Paths vary by platform, check workspace/{platform}/ structure
 docker compose run --rm \
   -e RUN_MINUI=true \
   -e MINUI_BIN=./build/SYSTEM/rg35xx/bin/minui.elf \
   runner
 ```
+
+**Note**: Different platforms may require specific toolchains. The dev platform is the easiest to build in Docker.
 
 ## Tips
 
