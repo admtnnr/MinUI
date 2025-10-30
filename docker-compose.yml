@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  builder:
+    build: .
+    platform: linux/arm64
+    entrypoint: /bin/sh
+    command: -c "${COMPILE_CMD:-make PLATFORM=dev build}"
+    volumes:
+      - minui_build:/work/build
+      - ./:/work/src:cached
+    environment:
+      - COMPILE_CMD
+    working_dir: /work/src
+
+  runner:
+    build: .
+    platform: linux/arm64
+    command: --run-tests
+    volumes:
+      - minui_build:/work/build
+      - ./:/work/src:cached
+    ports:
+      - "5900:5900"
+    stdin_open: true
+    tty: true
+
+volumes:
+  minui_build: {}
