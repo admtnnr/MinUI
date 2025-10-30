@@ -58,7 +58,7 @@ Or with custom compile command:
 COMPILE_CMD="make PLATFORM=dev build" make dev-docker-builder
 ```
 
-### 3. Run Test Suite with Visual Display
+### 3. Run MinUI with Visual Display
 
 ```bash
 make dev-docker-run
@@ -67,8 +67,11 @@ make dev-docker-run
 This will:
 - Start Xvfb (virtual X display)
 - Start x11vnc server on port 5900
-- Run the Python test runner
+- Start MinUI automatically
+- Run the test runner (by default)
 - Keep the container alive for inspection
+
+**Note**: MinUI always starts automatically. The test runner is optional.
 
 ### 4. Connect to VNC Display
 
@@ -88,12 +91,22 @@ No password is required for the VNC connection.
 
 ## Advanced Usage
 
-### Run MinUI Directly
+### Run MinUI Without Tests
 
-To run the MinUI binary instead of the test runner:
+MinUI always starts automatically. To run it without tests (for manual interaction):
 
 ```bash
-docker-compose run --rm -p 5900:5900 runner --run-minui
+docker-compose run --rm -p 5900:5900 runner
+```
+
+This starts MinUI and keeps it running for VNC inspection.
+
+### Run MinUI With Tests
+
+To explicitly run tests (this is the default behavior with `make dev-docker-run`):
+
+```bash
+docker-compose run --rm -p 5900:5900 runner --run-tests
 ```
 
 ### Custom Screen Resolution
@@ -105,21 +118,17 @@ docker-compose run --rm -p 5900:5900 runner --screen 800x600x24 --run-tests
 ### Enable Screen Recording
 
 ```bash
-docker-compose run --rm -p 5900:5900 runner --run-tests --record
+docker-compose run --rm -p 5900:5900 runner --record --run-tests
 ```
 
 Recordings are saved to `./build/recordings/screen_TIMESTAMP.mp4`.
 
 ### Custom Test Configuration
 
-```bash
-docker-compose run --rm -p 5900:5900 runner --run-tests
-```
-
 Set environment variables:
 
 ```bash
-TEST_CONFIG=/work/src/workspace/dev/tests/my_test.json docker-compose run --rm runner --run-tests
+MINUI_BIN=/custom/path/to/minui.elf docker-compose run --rm runner --run-tests
 ```
 
 ### Interactive Shell
@@ -136,10 +145,10 @@ The entrypoint script supports the following environment variables:
 
 - `SCREEN`: Screen resolution (e.g., "640x480x24"), auto-detected from makefile.env if not set
 - `RECORD_VIDEO`: Set to "true" to enable recording (same as --record flag)
-- `RUN_MINUI`: Set to "true" to run MinUI binary instead of tests
 - `MINUI_BIN`: Path to MinUI binary (default: `/work/build/SYSTEM/dev/bin/minui.elf`)
-- `TEST_CONFIG`: Path to test configuration JSON (default: `/work/src/workspace/dev/tests/test_basic_navigation.json`)
 - `COMPILE_CMD`: Custom compilation command for builder service
+
+**Note**: `RUN_MINUI` has been removed. MinUI now always starts automatically. Use `--run-tests` flag to optionally run tests.
 
 ## Makefile Targets
 
@@ -147,7 +156,7 @@ The top-level Makefile includes convenience targets:
 
 - `make dev-docker-build`: Build Docker images
 - `make dev-docker-builder`: Run builder container to compile MinUI
-- `make dev-docker-run`: Run test suite with visual display
+- `make dev-docker-run`: Run MinUI with test suite and visual display
 
 ## Troubleshooting
 
