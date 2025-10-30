@@ -233,20 +233,11 @@ else
     
     # Check for test runner (try multiple locations)
     if [ -f "tools/test_runner.py" ]; then
-        # Future pattern: tools/test_runner.py --config tests/config.json
+        # Future pattern: tools/test_runner.py --tests tests/ --output output/
         TEST_RUNNER="tools/test_runner.py"
-        echo "Test runner: $TEST_RUNNER"
-        echo "Tests: $TEST_DIR"
-        
-        exec python3 "$TEST_RUNNER" --tests "$TEST_DIR" --output "$TEST_OUTPUT"
     elif [ -f "workspace/dev/tools/run_tests.py" ]; then
         # Current pattern: workspace/dev/tools/run_tests.py
         TEST_RUNNER="workspace/dev/tools/run_tests.py"
-        echo "Test runner: $TEST_RUNNER"
-        echo "Tests: $TEST_DIR"
-        echo "Output: $TEST_OUTPUT"
-        
-        exec python3 "$TEST_RUNNER" --tests "$TEST_DIR" --output "$TEST_OUTPUT"
     else
         echo "Error: Test runner not found"
         echo "Tried:"
@@ -254,4 +245,11 @@ else
         echo "  - workspace/dev/tools/run_tests.py"
         exit 1
     fi
+    
+    echo "Test runner: $TEST_RUNNER"
+    echo "Tests: $TEST_DIR"
+    echo "Output: $TEST_OUTPUT"
+    
+    # Run test runner with standard arguments
+    exec python3 "$TEST_RUNNER" --tests "$TEST_DIR" --output "$TEST_OUTPUT"
 fi
