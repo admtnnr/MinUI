@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # Builder service - compiles MinUI and dependencies into shared volume
+  builder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: minui-dev:latest
+    volumes:
+      - ./workspace:/work/workspace:ro
+      - ./makefile:/work/makefile:ro
+      - ./makefile.toolchain:/work/makefile.toolchain:ro
+      - build-artifacts:/work/build
+    environment:
+      - COMPILE_CMD=${COMPILE_CMD:-cd workspace/dev && make}
+    command: >
+      bash -c "
+        echo '================================';
+        echo 'MinUI Builder Service';
+        echo '================================';
+        echo 'Compile command: $${COMPILE_CMD}';
+        echo '================================';
+        ${COMPILE_CMD:-cd workspace/dev && make};
+        echo '================================';
+        echo 'Build complete!';
+        echo 'Artifacts saved to shared volume';
+        echo '================================';
+      "
+    user: root
+    working_dir: /work
+    profiles:
+      - build
+
+  # Runner service - provides Xvfb + VNC for visual testing and debugging
+  runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: minui-dev:latest
+    volumes:
+      - ./workspace:/work/workspace:ro
+      - build-artifacts:/work/build:ro
+    ports:
+      - "5900:5900"  # VNC port
+    environment:
+      # Screen configuration (defaults to 640x480x24 from platform.h)
+      - SCREEN=${SCREEN:-}
+      - DISPLAY_NUM=${DISPLAY_NUM:-99}
+      - VNC_PORT=${VNC_PORT:-5900}
+      
+      # Runner mode
+      - RUN_MINUI=${RUN_MINUI:-false}
+      
+      # Recording
+      - RECORD=${RECORD:-false}
+      
+      # Test configuration
+      - TEST_CONFIG=${TEST_CONFIG:-workspace/dev/tests/test_basic_navigation.json}
+      
+      # MinUI binary path
+      - MINUI_BIN=${MINUI_BIN:-./build/SYSTEM/rg35xx/bin/minui.elf}
+    stdin_open: true
+    tty: true
+
+volumes:
+  build-artifacts:
+    name: minui-build-artifacts

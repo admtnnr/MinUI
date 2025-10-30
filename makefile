@@ -166,6 +166,35 @@ package: tidy
 	
 ###########################################################
 
+# Docker development environment targets
+
+.PHONY: docker-build docker-run docker-build-minui docker-test docker-debug docker-clean
+
+docker-build:
+	@echo "Building MinUI Docker development image..."
+	docker compose build runner
+
+docker-build-minui:
+	@echo "Running builder service to compile MinUI..."
+	docker compose --profile build run --rm builder
+
+docker-test:
+	@echo "Running test runner in Docker with VNC..."
+	@echo "Connect via VNC to localhost:5900 (no password)"
+	docker compose up runner
+
+docker-debug:
+	@echo "Running MinUI directly in Docker with VNC for debugging..."
+	@echo "Connect via VNC to localhost:5900 (no password)"
+	docker compose run --rm -e RUN_MINUI=true runner
+
+docker-clean:
+	@echo "Cleaning up Docker containers and volumes..."
+	docker compose down -v
+	docker volume rm minui-build-artifacts 2>/dev/null || true
+
+###########################################################
+
 .DEFAULT:
 	# ----------------------------------------------------
 	# $@
