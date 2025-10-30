@@ -166,6 +166,20 @@ package: tidy
 	
 ###########################################################
 
+# Docker development targets
+.PHONY: dev-docker-build dev-docker-builder dev-docker-run
+
+dev-docker-build:
+	docker-compose build --parallel
+
+dev-docker-builder:
+	docker-compose run --rm builder
+
+dev-docker-run:
+	docker-compose up runner
+
+###########################################################
+
 .DEFAULT:
 	# ----------------------------------------------------
 	# $@
