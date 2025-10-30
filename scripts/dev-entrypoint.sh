@@ -33,14 +33,14 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Set values with priority: CLI args > environment variables > defaults
+# Apply CLI arguments if provided (overrides environment variables)
 [ -n "$SCREEN_ARG" ] && SCREEN="$SCREEN_ARG"
 [ -n "$RECORD_ARG" ] && RECORD="$RECORD_ARG"
 [ -n "$RUN_MINUI_ARG" ] && RUN_MINUI="$RUN_MINUI_ARG"
 [ -n "$RUN_TESTS_ARG" ] && RUN_TESTS="$RUN_TESTS_ARG"
 
-# Determine SCREEN setting
-# Priority: CLI flag > environment variable > makefile.env > default
+# Determine SCREEN setting if not already set
+# Priority order: CLI --screen flag > SCREEN env var > makefile.env > default
 if [ -z "$SCREEN" ]; then
   # Try to parse from workspace/dev/platform/makefile.env
   for makefile_path in /work/src/workspace/dev/platform/makefile.env /work/src/workspace/platform/dev/makefile.env; do
