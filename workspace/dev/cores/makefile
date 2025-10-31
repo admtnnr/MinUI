@@ -6,9 +6,10 @@
 CORES = fceumm gambatte gpsp picodrive snes9x2005_plus
 CORES+= mednafen_pce_fast mednafen_vb fake-08 mgba race
 
-# Optional: Add these manually if needed (may have build issues)
+# Optional: Add these manually if needed (have build issues)
 # pokemini - Has patching issues on dev platform
-# pcsx_rearmed mednafen_supafaust
+# pcsx_rearmed - Submodule uses deprecated git:// protocol (fails to clone gnulib)
+# mednafen_supafaust - SNES alternative
 
 ###############################
 
@@ -26,6 +27,8 @@ gambatte_REPO = https://github.com/libretro/gambatte-libretro
 
 picodrive_REPO = https://github.com/irixxxx/picodrive
 picodrive_MAKEFILE = Makefile.libretro
+
+pcsx_rearmed_MAKEFILE = Makefile.libretro
 
 pokemini_REPO = https://github.com/libretro/PokeMini
 pokemini_MAKEFILE = Makefile.libretro
