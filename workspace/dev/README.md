@@ -361,11 +361,12 @@ cd workspace/dev/tests
 | **mednafen_pce_fast** | PC Engine / TurboGrafx-16 | ✅ Working | .pce, .sgx, .cue, .ccd, .chd |
 | **mednafen_vb** | Virtual Boy | ✅ Working | .vb, .vboy, .bin |
 | **mgba** | Game Boy Advance | ✅ Working | .gba, .gb, .gbc, .sgb |
+| **pcsx_rearmed** | PlayStation 1 | ✅ Working | .bin, .cue, .img, .mdf, .pbp, .chd, .iso |
 | **picodrive** | Genesis / Mega Drive / 32X / Sega CD | ✅ Working | .bin, .gen, .smd, .md, .32x, .cue, .iso, .sms, .gg |
 | **race** | Neo Geo Pocket / Color | ✅ Working | .ngp, .ngc, .ngpc, .npc |
 | **snes9x2005_plus** | Super Nintendo | ✅ Working | .smc, .fig, .sfc, .gd3, .swc |
 
-**Total**: 10 cores covering 9 different systems
+**Total**: 11 cores covering 10 different systems
 
 **Adding more cores**: Edit `workspace/dev/cores/makefile` and run `PLATFORM=dev make <corename>`
 

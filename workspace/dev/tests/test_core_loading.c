@@ -117,6 +117,7 @@ int main(int argc, char* argv[]) {
             "../cores/output/mednafen_pce_fast_libretro.so",
             "../cores/output/mednafen_vb_libretro.so",
             "../cores/output/mgba_libretro.so",
+            "../cores/output/pcsx_rearmed_libretro.so",
             "../cores/output/picodrive_libretro.so",
             "../cores/output/race_libretro.so",
             "../cores/output/snes9x2005_plus_libretro.so",
